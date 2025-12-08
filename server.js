@@ -11,6 +11,7 @@ const benhNhanRoutes= require('./routes/benhNhanRoutes');
 const thongBaoRoutes= require('./routes/thongBaoRoutes');
 const lichThamBenhRoutes= require('./routes/lichThamBenh');
 const congViecRoutes= require('./routes/congViecRoutes');
+const huyetApRoutes= require('./routes/huyetApRoutes');
 
 const connection=require('./config/database');
 
@@ -51,6 +52,7 @@ app.use('/api/benh_nhan', benhNhanRoutes);
 app.use('/api/thong_bao',thongBaoRoutes);
 app.use('/api/lich_tham_benh',lichThamBenhRoutes);
 app.use('/api/cong_viec',congViecRoutes);
+app.use('/api/huyet_ap',huyetApRoutes);
 
 app.get('/', (req, res) => {
   res.json({
