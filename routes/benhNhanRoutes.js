@@ -1,0 +1,10 @@
+const express =require('express');
+const router = express.Router();
+const BenhNhanController=require('../controller/benhNhanController')
+const {authenticate}= require('../middlewares/auth');
+
+router.get('/tong_so',authenticate,BenhNhanController.getTongSoBenhNhan);
+router.get('/ds',authenticate,BenhNhanController.getDsBenhNhan);
+router.get('/:id',authenticate, BenhNhanController.getThongTinBenhNhan);
+
+module.exports= router;
