@@ -13,10 +13,10 @@ class thongBaoController{
 
             res.json({
                 success : true,
-                data: thongBaos,
+                thong_bao: thongBaos,
                 pagination:{
                     trang_hien_tai: parseInt(page),
-                    so_trang,
+                    ...so_trang,
                     so_thong_bao: tong_so,
                 }
             })
@@ -41,7 +41,7 @@ class thongBaoController{
             }
             res.json({
                 success: true,
-                data: thongBao
+                ...thongBao
             })
         } catch (error) {
             console.error('Error getting notification detail:', error);
@@ -58,7 +58,7 @@ class thongBaoController{
             const tong_so= await ThongBao.countByType(loai);
             res.json({
                 success:true,
-                data:tong_so
+                tong_so:tong_so
             });
         } catch (error) {
             console.error('Error :', error);

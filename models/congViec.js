@@ -23,7 +23,7 @@ class congViec{
         `;
         
         const [results] = await connection.execute(query, [idDieuDuong, dateToCheck]);
-        return results;
+        return results[0];
     } catch (error) {
         throw error;
     }

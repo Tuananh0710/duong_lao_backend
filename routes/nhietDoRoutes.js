@@ -1,0 +1,10 @@
+const express= require('express');
+const router= express.Router();
+const nhietDoController=require('../controller/nhietDoController');
+const { authenticate }=require('../middlewares/auth');
+router.post('/',authenticate,nhietDoController.create);
+router.get('/:idBenhNhan',authenticate,nhietDoController.getByBenhNhan);
+router.get('/:idBenhNhan/lastest',authenticate,nhietDoController.getLastestByBenhNhan);
+router.delete('/:id',authenticate,nhietDoController.delete);
+router.put('/:id',authenticate,nhietDoController.update);
+module.exports=router;

@@ -11,8 +11,12 @@ const benhNhanRoutes= require('./routes/benhNhanRoutes');
 const thongBaoRoutes= require('./routes/thongBaoRoutes');
 const lichThamBenhRoutes= require('./routes/lichThamBenh');
 const congViecRoutes= require('./routes/congViecRoutes');
-
+const huyetApRoutes= require('./routes/huyetApRoutes');
+const nhipTimRoutes= require('./routes/nhipTimRoutes');
 const connection=require('./config/database');
+const nhietDoRoutes= require('./routes/nhietDoRoutes');
+const dashboardRoutes= require('./routes/dashBoardRoutes');
+const duongHuyetRoutes=require('./routes/duongHuyetRoutes')
 
 const {errorHandler,notFound}= require('./middlewares/errorHandler');
 const { timeStamp } = require('console');
@@ -51,7 +55,11 @@ app.use('/api/benh_nhan', benhNhanRoutes);
 app.use('/api/thong_bao',thongBaoRoutes);
 app.use('/api/lich_tham_benh',lichThamBenhRoutes);
 app.use('/api/cong_viec',congViecRoutes);
-
+app.use('/api/huyet_ap',huyetApRoutes);
+app.use('/api/nhip_tim',nhipTimRoutes);
+app.use('/api/nhiet_do',nhietDoRoutes);
+app.use('/api/dashboard',dashboardRoutes);
+app.use('/api/duong_huyet/',duongHuyetRoutes)
 app.get('/', (req, res) => {
   res.json({
     message: 'Chào mừng đến với API hệ thống Dưỡng Lão',
