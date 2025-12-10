@@ -5,21 +5,18 @@ class lichThamBenhController {
         try {
             const { idDieuDuong } = req.params;
             
-            // Sửa: Thêm return sau khi gửi response lỗi
             if (!idDieuDuong || isNaN(idDieuDuong)) {
-                return res.status(400).json({  // ✅ THÊM RETURN
+                return res.status(400).json({ 
                     success: false,
                     message: 'ID điều dưỡng không hợp lệ'
                 });
             }
-            
-            // Sửa: Đổi tên biến để tránh trùng
+      
             const lichThamBenhData = await lichThamBenhModel.getThongKeLichThamBenhByDieuDuong(parseInt(idDieuDuong));
             
             return res.status(200).json({
                 success: true,
-                data: lichThamBenhData,
-                message: 'Lấy danh sách lịch thăm bệnh thành công'
+                lich_tham_benh: lichThamBenhData,
             });
         } catch (error) {
             console.error('Lỗi trong getThongKeLichThamBenhByDieuDuong:', error);
@@ -34,9 +31,9 @@ class lichThamBenhController {
         try {
             const { idDieuDuong } = req.params;
             
-            // Sửa: Thêm return
+  
             if (!idDieuDuong || isNaN(idDieuDuong)) {
-                return res.status(400).json({  // ✅ THÊM RETURN
+                return res.status(400).json({  
                     success: false,
                     message: 'ID điều dưỡng không hợp lệ'
                 });
@@ -46,8 +43,7 @@ class lichThamBenhController {
             
             return res.status(200).json({
                 success: true,
-                data: tongSo,
-                message: 'Lấy thống kê thành công'
+                tong_so: tongSo,
             });
         } catch (error) {
             console.error('Lỗi trong getTongSoLichHen:', error);

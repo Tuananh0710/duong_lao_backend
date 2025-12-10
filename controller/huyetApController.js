@@ -21,7 +21,6 @@ class huyetApController{
 
             res.status(201).json({
                 success:true,
-                data
         });
         } catch (error) {
             console.error('Lỗi trong controller create:', error);
@@ -44,7 +43,7 @@ class huyetApController{
             }
             res.status(200).json({
                 success: true,
-                data: data
+                huyet_ap: data
             });
         } catch (error) {
             console.error('Lỗi trong controller getById:', error);
@@ -68,7 +67,7 @@ class huyetApController{
             
             res.status(200).json({
                 success: true,
-                data: data
+                huyet_ap: data
             });
         } catch (error) {
             console.error('Lỗi trong controller getLatestByBenhNhan:', error);

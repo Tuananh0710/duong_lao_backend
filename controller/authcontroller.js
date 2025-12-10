@@ -44,10 +44,8 @@ const login= async(req,res,next)=>{
         res.json({
             success: true,
             message: 'Đăng nhập thành công !',
-            data:{
-                token,
-                user
-            }
+            token,
+            user
         });
     }  catch(error){
         next(error);
@@ -69,7 +67,7 @@ const getProfile= async(req,res,next) => {
         res.json({
             success: true,
             message:"lấy ds user thành công !",
-            data: users[0]
+            ...users[0]
         })
     } catch (error) {
         next(error);

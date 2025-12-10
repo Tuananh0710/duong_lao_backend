@@ -57,7 +57,7 @@ class nhietDoController{
             }
              res.status(200).json({
                 success: true,
-                data: data,
+                nhiet_do: data,
                 total: data.length
             });
         } catch (error) {
@@ -81,7 +81,7 @@ class nhietDoController{
         }
             res.status(200).json({
                 success: true,
-                data: data
+                nhiet_do: data
             });
         } catch (error) {
             console.error('Lỗi trong controller getLatestByBenhNhan:', error);

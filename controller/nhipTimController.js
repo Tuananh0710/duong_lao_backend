@@ -48,7 +48,7 @@ class nhipTimController{
             }
             return res.status(200).json({
                 success:true,
-                data,
+                nhip_tim:data,
             })
         } catch (error) {
             console.error('Lỗi trong controller getById:', error);
@@ -71,7 +71,7 @@ class nhipTimController{
             }
              return res.status(200).json({
                 success:true,
-                data,
+                nhip_tim:data,
             })
         } catch (error) {
              console.error('Lỗi trong controller getLatestByBenhNhan:', error);

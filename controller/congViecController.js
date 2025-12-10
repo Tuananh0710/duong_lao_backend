@@ -9,7 +9,7 @@ class congViecController{
             success: true,
             id_dieu_duong: id,
             thoi_gian: new Date().toISOString().split('T')[0],
-            thong_ke: data
+            ...data
         });
     } catch (error) {
         console.error('Error:', error);
