@@ -16,7 +16,8 @@ const nhipTimRoutes= require('./routes/nhipTimRoutes');
 const connection=require('./config/database');
 const nhietDoRoutes= require('./routes/nhietDoRoutes');
 const dashboardRoutes= require('./routes/dashBoardRoutes');
-const duongHuyetRoutes=require('./routes/duongHuyetRoutes')
+const duongHuyetRoutes=require('./routes/duongHuyetRoutes');
+const sp02Routes= require('./routes/sp02Routes');
 
 const {errorHandler,notFound}= require('./middlewares/errorHandler');
 const { timeStamp } = require('console');
@@ -59,7 +60,8 @@ app.use('/api/huyet_ap',huyetApRoutes);
 app.use('/api/nhip_tim',nhipTimRoutes);
 app.use('/api/nhiet_do',nhietDoRoutes);
 app.use('/api/dashboard',dashboardRoutes);
-app.use('/api/duong_huyet/',duongHuyetRoutes)
+app.use('/api/duong_huyet/',duongHuyetRoutes);
+app.use('/api/sp02/',sp02Routes);
 app.get('/', (req, res) => {
   res.json({
     message: 'Chào mừng đến với API hệ thống Dưỡng Lão',

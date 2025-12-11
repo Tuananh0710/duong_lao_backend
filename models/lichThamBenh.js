@@ -43,11 +43,7 @@ class lichThamBenh {
         try {
             const query = `
                 SELECT 
-                    COUNT(*) AS tong_so,
-                    SUM(CASE WHEN ltb.trang_thai = 'cho_duyet' THEN 1 ELSE 0 END) AS cho_duyet,
-                    SUM(CASE WHEN ltb.trang_thai = 'da_duyet' THEN 1 ELSE 0 END) AS da_duyet,
-                    SUM(CASE WHEN ltb.trang_thai = 'tu_choi' THEN 1 ELSE 0 END) AS tu_choi,
-                    DATE(ltb.ngay_tao) AS ngay
+                    COUNT(*) AS tong_so
                 FROM lich_tham_benh ltb
                 INNER JOIN benh_nhan bn ON ltb.id_benh_nhan = bn.id
                 INNER JOIN dieu_duong_benh_nhan ddbn ON bn.id = ddbn.id_benh_nhan
@@ -55,13 +51,14 @@ class lichThamBenh {
                     AND ddbn.trang_thai = 'dang_quan_ly'
                     AND bn.da_xoa = 0
                     AND ltb.ngay = CURDATE()
+                    AND ltb.trang_thai = 'da_duyet'
                 GROUP BY DATE(ltb.ngay_tao) 
                 ORDER BY ngay DESC
                 LIMIT 7  
             `;
 
             const [result] = await connection.query(query, [idDieuDuong]);
-            return result;
+            return result.tong_so;
         } catch (error) {
             console.error('Lỗi khi lấy thống kê lịch thăm bệnh:', error);
             throw error;

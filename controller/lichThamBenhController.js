@@ -43,7 +43,7 @@ class lichThamBenhController {
             
             return res.status(200).json({
                 success: true,
-                tong_so: tongSo,
+                ...tongSo,
             });
         } catch (error) {
             console.error('Lỗi trong getTongSoLichHen:', error);
