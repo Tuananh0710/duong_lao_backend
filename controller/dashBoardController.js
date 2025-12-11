@@ -47,11 +47,7 @@ class dashBoard {
                 tong_so_cong_viec: tong_so_cong_viec || 0,
                 tong_so_lich: tong_so_lich || 0,
                 tong_so_thong_bao: tong_so_thong_bao || 0,
-                user_info: {
-                    id_dieu_duong: parseInt(idDieuDuong),
-                    ho_ten: req.user?.ho_ten,
-                    vai_tro: req.user?.vai_tro
-                }
+                id_dieu_duong: parseInt(idDieuDuong),
             });
             
         } catch (error) {

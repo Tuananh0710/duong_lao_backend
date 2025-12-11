@@ -64,10 +64,6 @@ class DuongHuyetModel {
         }
     }
 
-
-    /**
-     * Lấy dữ liệu đường huyết theo bệnh nhân
-     */
     static async findByBenhNhan(idBenhNhan, filters = {}) {
         try {
             let query = `
