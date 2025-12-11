@@ -1,6 +1,6 @@
 const connection= require('../config/database');
 class congViec{
-    static async getCongViecByDieuDuong(idDieuDuong, specificDate = null) {
+    static async hgetCongViecByDieuDuong(idDieuDuong, specificDate = null) {
     try {
         const dateToCheck = specificDate || new Date().toISOString().split('T')[0];
         
