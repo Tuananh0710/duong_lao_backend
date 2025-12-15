@@ -40,30 +40,27 @@ class lichThamBenh {
     }
 
     static async getTongSoLichHen(idDieuDuong) {
-        try {
-            const query = `
-                SELECT 
-                    COUNT(*) AS tong_so
-                FROM lich_tham_benh ltb
-                INNER JOIN benh_nhan bn ON ltb.id_benh_nhan = bn.id
-                INNER JOIN dieu_duong_benh_nhan ddbn ON bn.id = ddbn.id_benh_nhan
-                WHERE ddbn.id_dieu_duong = ?
-                    AND ddbn.trang_thai = 'dang_quan_ly'
-                    AND bn.da_xoa = 0
-                    AND ltb.ngay = CURDATE()
-                    AND ltb.trang_thai = 'da_duyet'
-                GROUP BY DATE(ltb.ngay_tao) 
-                ORDER BY ngay DESC
-                LIMIT 7  
-            `;
+    try {
+        const query = `
+            SELECT 
+                COUNT(*) AS tong_so
+            FROM lich_tham_benh ltb
+            INNER JOIN benh_nhan bn ON ltb.id_benh_nhan = bn.id
+            INNER JOIN dieu_duong_benh_nhan ddbn ON bn.id = ddbn.id_benh_nhan
+            WHERE ddbn.id_dieu_duong = ?
+                AND ddbn.trang_thai = 'dang_quan_ly'
+                AND bn.da_xoa = 0
+                AND ltb.ngay = CURDATE()
+                AND ltb.trang_thai = 'da_duyet'
+            LIMIT 1
+        `;
 
-            const [result] = await connection.query(query, [idDieuDuong]);
-            return result.tong_so;
-        } catch (error) {
-            console.error('Lỗi khi lấy thống kê lịch thăm bệnh:', error);
-            throw error;
-        }
+        const [result] = await connection.query(query, [idDieuDuong]);
+        return result[0] ? result[0].tong_so : 0;
+    } catch (error) {
+        console.error('Lỗi khi lấy thống kê lịch thăm bệnh:', error);
+        throw error;
     }
 }
-
+}
 module.exports = lichThamBenh;

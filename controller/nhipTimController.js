@@ -5,7 +5,6 @@ class nhipTimController{
             const{
                 id_benh_nhan, 
                 gia_tri_nhip_tim,
-                thoi_gian_do,
                 tinh_trang_benh_nhan_khi_do
             }=req.body;
              if (!id_benh_nhan || !gia_tri_nhip_tim || !tinh_trang_benh_nhan_khi_do) {
@@ -25,7 +24,8 @@ class nhipTimController{
              res.status(201).json({
                 success: true,
                 message: result.message,
-                data: result.data
+                data: result.data,
+                ...evaluation
             });
         } catch (error) {
              console.error('Lỗi trong controller create:', error);

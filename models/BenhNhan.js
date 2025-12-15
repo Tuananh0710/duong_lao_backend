@@ -39,10 +39,14 @@ class BenhNhan{
             
             // 1. Build main query for data
             let query = `
-                SELECT bn.*, 
-                       ddbn.id_dieu_duong,
-                       ddbn.ngay_bat_dau,
-                       ddbn.trang_thai as trang_thai_quan_ly
+                SELECT 
+                    bn.id,
+                    bn.ho_ten,
+                    bn.ngay_sinh,
+                    bn.gioi_tinh,
+                    bn.phong,
+                    bn.tinh_trang_hien_tai,
+                    bn.kha_nang_sinh_hoat
                 FROM benh_nhan bn
                 INNER JOIN dieu_duong_benh_nhan ddbn ON ddbn.id_benh_nhan = bn.id 
                     AND ddbn.id_dieu_duong = ?
@@ -66,7 +70,6 @@ class BenhNhan{
             
             const [rows] = await connection.query(query, params);
             
-            // 2. Build count query for pagination
             let countQuery = `
                 SELECT COUNT(DISTINCT bn.id) as tong_so
                 FROM benh_nhan bn
@@ -101,12 +104,10 @@ class BenhNhan{
             
             return {
                 data: rows,
-                pagination: {
-                    page: page,
-                    limit: limit,
-                    total: total,
-                    totalPages: totalPages
-                }
+                total:total,
+                page:page,
+                limit:limit,
+                totalPages:totalPages
             };
             
         } catch (error) {
@@ -120,19 +121,23 @@ class BenhNhan{
             const [rows] = await connection.query(
                 `
                 SELECT
-                    bn.*,
+                    bn.id,
+                    bn.ho_ten,
+                    bn.ngay_sinh,
+                    bn.gioi_tinh,
+                    bn.cccd,
+                    bn.nhom_mau,
+                    bn.phong,
+                    bn.anh_dai_dien,
+                    bn.ngay_nhap_vien,
+                    bn.tinh_trang_hien_tai,
+                    bn.kha_nang_sinh_hoat,
                     hs.tien_su_benh,
                     hs.di_ung_thuoc,
                     hs.lich_su_phau_thuat,
-                    hs.benh_ly_hien_tai,
                     nt.ho_ten as nguoi_than_ho_ten,
                     nt.moi_quan_he as nguoi_than_moi_quan_he,
-                    nt.so_dien_thoai as nguoi_than_so_dien_thoai,
-                    nt.email as nguoi_than_email,
-                    ddbn.id_dieu_duong,
-                    ddbn.ngay_bat_dau,
-                    ddbn.ngay_ket_thuc,
-                    ddbn.trang_thai as trang_thai_quan_ly
+                    nt.so_dien_thoai as nguoi_than_so_dien_thoai
                 FROM benh_nhan bn
                 LEFT JOIN ho_so_y_te_benh_nhan hs ON hs.id_benh_nhan = bn.id
                 LEFT JOIN nguoi_than_benh_nhan nt ON nt.id_benh_nhan = bn.id 
@@ -146,30 +151,5 @@ class BenhNhan{
             throw error;
         }
     }
-    static async getThongTinChiTietBenhNhan(id) {
-    try {
-        const [rows] = await connection.query(
-            `
-            SELECT
-                bn.*,
-                hs.tien_su_benh,
-                hs.di_ung_thuoc,
-                hs.lich_su_phau_thuat,
-                hs.benh_ly_hien_tai,
-                nt.ho_ten as nguoi_than_ho_ten,
-                nt.moi_quan_he as nguoi_than_moi_quan_he,
-                nt.so_dien_thoai as nguoi_than_so_dien_thoai,
-                nt.email as nguoi_than_email
-            FROM benh_nhan bn
-            LEFT JOIN ho_so_y_te_benh_nhan hs ON hs.id_benh_nhan = bn.id
-            LEFT JOIN nguoi_than_benh_nhan nt ON nt.id_benh_nhan = bn.id 
-                AND nt.la_nguoi_lien_he_chinh = 1
-            WHERE bn.id = ? AND bn.da_xoa = 0
-            `, [id]);
-        return rows.length > 0 ? rows[0] : null;
-    } catch (error) {
-        throw error;
-    }
-}
 }
 module.exports = BenhNhan

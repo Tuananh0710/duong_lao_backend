@@ -24,7 +24,7 @@ class nhipTim{
                 danh_gia,
                 thoi_gian_do || new Date(),
                 tinh_trang_benh_nhan_khi_do,
-                ghi_chu,
+                ghi_chu || null,
                 muc_do,
                 noi_dung_canh_bao
             ];
