@@ -43,16 +43,18 @@ class lichThamBenh {
     try {
         const query = `
             SELECT 
-                COUNT(*) AS tong_so
-            FROM lich_tham_benh ltb
-            INNER JOIN benh_nhan bn ON ltb.id_benh_nhan = bn.id
-            INNER JOIN dieu_duong_benh_nhan ddbn ON bn.id = ddbn.id_benh_nhan
-            WHERE ddbn.id_dieu_duong = ?
-                AND ddbn.trang_thai = 'dang_quan_ly'
-                AND bn.da_xoa = 0
-                AND ltb.ngay = CURDATE()
-                AND ltb.trang_thai = 'da_duyet'
-            LIMIT 1
+    COUNT(*) AS tong_so
+FROM lich_tham_benh ltb
+INNER JOIN benh_nhan bn ON ltb.id_benh_nhan = bn.id
+INNER JOIN dieu_duong_benh_nhan ddbn ON bn.id = ddbn.id_benh_nhan
+WHERE ddbn.id_dieu_duong = ?
+    AND ddbn.trang_thai = 'dang_quan_ly'
+    AND bn.da_xoa = 0
+    AND ltb.ngay = CURDATE()
+    AND ltb.trang_thai = 'da_duyet'
+GROUP BY DATE(ltb.ngay_tao), ltb.ngay  -- Thêm cột ngày vào GROUP BY
+ORDER BY ngay DESC
+LIMIT 1
         `;
 
         const [result] = await connection.query(query, [idDieuDuong]);
@@ -62,5 +64,28 @@ class lichThamBenh {
         throw error;
     }
 }
+    static async getLichLastestByNguoiThanBenhNhan(id_nguoi_than,id_benh_nhan){
+        try {
+            const query=`
+            SELECT 
+                ltb.ngay,
+                ltb.khung_gio,
+                ltb.id_benh_nhan,
+                ltb.id_nguoi_than
+            FROM lich_tham_benh ltb
+            WHERE ltb.id_benh_nhan=? AND ltb.id_nguoi_than=? AND ltb.trang_thai = 'da_duyet' AND ltb.ngay >= CURDATE()
+            ORDER BY ltb.ngay DESC
+            LIMIT 1
+            `
+            if(!id_benh_nhan || !id_nguoi_than){
+                throw new Error('thieu tham so can thiet !');
+            }
+            const [rows]= await connection.execute(query,[id_benh_nhan,id_nguoi_than]);
+            return rows[0] || null
+        } catch (error) {
+            console.error('Lỗi khi lấy dữ liệu lịch hẹn gần nhất:', error);
+            throw new Error('Không thể lấy dữ liệu lịch hẹn gần nhất: ' + error.message);
+        }
+    }
 }
 module.exports = lichThamBenh;

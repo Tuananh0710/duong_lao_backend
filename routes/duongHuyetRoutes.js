@@ -10,7 +10,7 @@ router.delete('/:id', authenticate, DuongHuyetController.delete);
 
 
 router.get('/benh_nhan/:idBenhNhan', authenticate, DuongHuyetController.getByBenhNhan); 
-router.get('/benh_nhan/:idBenhNhan/latest', authenticate, DuongHuyetController.getLatestByBenhNhan); 
+router.get('/benh_nhan/:idBenhNhan/lastest', authenticate, DuongHuyetController.getLatestByBenhNhan); 
 
 
 

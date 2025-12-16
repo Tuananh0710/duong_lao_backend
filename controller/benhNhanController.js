@@ -110,7 +110,6 @@ class BenhNhanController {
                 message: `Danh sách bệnh nhân (${newResult.data?.length || 0} bản ghi)`,
                 benh_nhan: newResult.data || [],
                 id_dieu_duong: idDieuDuongNum
-                // Không có pagination
             });
         }
         

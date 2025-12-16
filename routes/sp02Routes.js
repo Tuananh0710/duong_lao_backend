@@ -9,7 +9,7 @@ router.put('/:id', authenticate, SpO2Controller.update);
 router.delete('/:id', authenticate, SpO2Controller.delete); 
 
 router.get('/benh_nhan/:idBenhNhan', authenticate, SpO2Controller.getByBenhNhan); 
-router.get('/benh_nhan/:idBenhNhan/latest', authenticate, SpO2Controller.getLatestByBenhNhan); 
+router.get('/benh_nhan/:idBenhNhan/lastest', authenticate, SpO2Controller.getLatestByBenhNhan); 
 
 
 
