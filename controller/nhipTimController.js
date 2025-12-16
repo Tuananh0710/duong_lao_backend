@@ -26,8 +26,8 @@ class nhipTimController{
              res.status(201).json({
                 success: true,
                 message: result.message,
-                data: result.data,
-                ...evaluation
+                // data: result.data,
+                // ...evaluation
             });
         } catch (error) {
              console.error('Lỗi trong controller create:', error);

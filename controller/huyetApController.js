@@ -21,6 +21,7 @@ class huyetApController{
 
             res.status(201).json({
                 success:true,
+                message: 'Thêm dữ liệu huyết áp thành công',
         });
         } catch (error) {
             console.error('Lỗi trong controller create:', error);

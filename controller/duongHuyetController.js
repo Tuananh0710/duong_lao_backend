@@ -62,8 +62,8 @@ class DuongHuyetController {
             res.status(201).json({
                 success: true,
                 message: result.message,
-                duong_huyet: result.data,
-                measurement_time: measurementTime
+                // duong_huyet: result.data,
+                // measurement_time: measurementTime
             });
         } catch (error) {
             console.error('Lỗi trong controller create:', error);

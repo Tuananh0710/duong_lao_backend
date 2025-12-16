@@ -40,7 +40,7 @@ class sp02Controller{
             res.status(201).json({
                 success: true,
                 message: result.message,
-                data: result.data
+                // data: result.data
             });
 
         } catch (error) {
