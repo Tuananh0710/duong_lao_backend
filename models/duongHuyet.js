@@ -23,15 +23,15 @@ class DuongHuyetModel {
             `;
 
             const values = [
-                id_benh_nhan,
-                gia_tri_duong_huyet,
-                danh_gia,
+                id_benh_nhan || null,
+                gia_tri_duong_huyet || null,
+                danh_gia || null,
                 thoi_gian_do || new Date(),
                 vi_tri_lay_mau || 'ngon_tay', 
-                trieu_chung_kem_theo,
-                ghi_chu,
-                muc_do,
-                noi_dung_canh_bao
+                trieu_chung_kem_theo || null,
+                ghi_chu || null,
+                muc_do || null,
+                noi_dung_canh_bao|| null
             ];
 
             const [result] = await db.execute(query, values);

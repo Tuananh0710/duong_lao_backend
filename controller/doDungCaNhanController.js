@@ -112,7 +112,7 @@ const doDungCaNhanController = {
             
             return res.status(200).json({
                 success: true,
-                message: 'Cập nhật đồ dùng thành công',
+                message: 'Cập nhật đồ dùng thành công', 
             });
             
         } catch (error) {

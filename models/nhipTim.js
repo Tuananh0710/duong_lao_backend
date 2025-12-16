@@ -19,14 +19,14 @@ class nhipTim{
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const value=[
-                id_benh_nhan,
-                gia_tri_nhip_tim,
-                danh_gia,
+                id_benh_nhan || null,
+                gia_tri_nhip_tim || null|| null,
+                danh_gia || null,
                 thoi_gian_do || new Date(),
                 tinh_trang_benh_nhan_khi_do,
                 ghi_chu || null,
-                muc_do,
-                noi_dung_canh_bao
+                muc_do || null,
+                noi_dung_canh_bao || null
             ];
             const result =await connection.execute(query,value);
             return result;
@@ -92,7 +92,7 @@ class nhipTim{
 
             const query = `UPDATE nhip_tim SET ${fields.join(', ')} WHERE id = ?`;
             
-            const [result] = await db.execute(query, values);
+            const [result] = await connection.execute(query, values);
             
             if (result.affectedRows === 0) {
                 return { success: false, message: 'Không tìm thấy bản ghi để cập nhật' };

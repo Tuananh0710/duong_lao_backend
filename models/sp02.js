@@ -20,14 +20,14 @@ class sp02{
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const values = [
-                id_benh_nhan,
-                gia_tri_spo2,
+                id_benh_nhan || null,
+                gia_tri_spo2 || null,
                 thoi_gian_do || new Date(),
                 vi_tri_do || 'ngon_tay_tro', 
                 tinh_trang_ho_hap || 'binh_thuong',
-                ghi_chu,
-                muc_do,
-                noi_dung_canh_bao
+                ghi_chu || null,
+                muc_do || null,
+                noi_dung_canh_bao || null
             ];
             const [result] = await connection.execute(query,values);
             const newRecord = await this.findById(result.insertId);

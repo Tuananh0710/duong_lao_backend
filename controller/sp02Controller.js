@@ -9,7 +9,7 @@ class sp02Controller{
                 vi_tri_do,
                 trieu_chung_ho_hap
             }=req.body;
-             if (!id_benh_nhan || !vi_tri_do || !trieu_chung_ho_hap || gia_tri_spo2 === undefined) {
+             if (!id_benh_nhan || !vi_tri_do || !trieu_chung_ho_hap || !gia_tri_spo2 === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'Vui lòng cung cấp đầy đủ thông tin'

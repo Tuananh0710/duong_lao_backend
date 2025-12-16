@@ -20,15 +20,15 @@ class nhietDo{
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const value=[
-                id_benh_nhan,
-                gia_tri_nhiet_do,
-                danh_gia,
+                id_benh_nhan || null,
+                gia_tri_nhiet_do || null,
+                danh_gia || null,
                 thoi_gian_do || new Date(),
                 vi_tri_do || 'nach', 
                 tinh_trang_luc_do || 'nghi_ngoi', 
-                ghi_chu,
-                muc_do,
-                noi_dung_canh_bao
+                ghi_chu || null,
+                muc_do || null,
+                noi_dung_canh_bao|| null
             ];
             const [result]= await connection.execute(query,value);
             return {
