@@ -5,12 +5,13 @@ class nhipTimController{
             const{
                 id_benh_nhan, 
                 gia_tri_nhip_tim,
-                tinh_trang_benh_nhan_khi_do
+                tinh_trang_benh_nhan_khi_do,
+                ghi_chu  // Optional field
             }=req.body;
              if (!id_benh_nhan || !gia_tri_nhip_tim || !tinh_trang_benh_nhan_khi_do) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Vui lòng cung cấp đầy đủ thông tin: id_benh_nhan, gia_tri_nhip_tim'
+                    message: 'Vui lòng cung cấp đầy đủ thông tin: id_benh_nhan, gia_tri_nhip_tim, tinh_trang_benh_nhan_khi_do'
                 });
             }
             const evaluation= nhipTim.evaluateHeartRate(gia_tri_nhip_tim);
@@ -18,7 +19,8 @@ class nhipTimController{
                 ...req.body,
                 ...evaluation,
                 thoi_gian_do: req.body.thoi_gian_do || new Date(),
-                tinh_trang_benh_nhan_khi_do: tinh_trang_benh_nhan_khi_do || 'nghi_ngoi'
+                tinh_trang_benh_nhan_khi_do: tinh_trang_benh_nhan_khi_do || 'nghi_ngoi',
+                ghi_chu: ghi_chu || null  // Optional: có thể có hoặc không
             };
             const result =await nhipTim.create(data);
              res.status(201).json({

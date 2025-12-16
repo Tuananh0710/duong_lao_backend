@@ -25,11 +25,13 @@ class sp02{
                 thoi_gian_do || new Date(),
                 vi_tri_do || 'ngon_tay_tro', 
                 tinh_trang_ho_hap || 'binh_thuong',
-                ghi_chu || null,
-                muc_do || null,
-                noi_dung_canh_bao || null
+                ghi_chu ?? null,
+                muc_do ?? null,
+                noi_dung_canh_bao ?? null
             ];
-            const [result] = await connection.execute(query,values);
+            // Đảm bảo không có undefined trong values
+            const sanitizedValues = values.map(v => v === undefined ? null : v);
+            const [result] = await connection.execute(query, sanitizedValues);
             const newRecord = await this.findById(result.insertId);
              return {
                 success: true,
@@ -141,7 +143,9 @@ class sp02{
 
             const query = `UPDATE spo2 SET ${fields.join(', ')} WHERE id = ?`;
             
-            const [result] = await connection.execute(query, values);
+            // Đảm bảo không có undefined trong values
+            const sanitizedValues = values.map(v => v === undefined ? null : v);
+            const [result] = await connection.execute(query, sanitizedValues);
             
             if (result.affectedRows === 0) {
                 return { success: false, message: 'Không tìm thấy bản ghi để cập nhật' };
