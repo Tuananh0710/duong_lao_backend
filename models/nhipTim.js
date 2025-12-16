@@ -24,12 +24,26 @@ class nhipTim{
                 danh_gia,
                 thoi_gian_do || new Date(),
                 tinh_trang_benh_nhan_khi_do,
-                ghi_chu || null,
-                muc_do,
-                noi_dung_canh_bao
+                ghi_chu ?? null,
+                muc_do ?? null,
+                noi_dung_canh_bao ?? null
             ];
-            const result =await connection.execute(query,value);
-            return result;
+            // Đảm bảo không có undefined trong values
+            const sanitizedValues = value.map(v => v === undefined ? null : v);
+            const [result] = await connection.execute(query, sanitizedValues);
+            // Lấy record vừa tạo bằng ID
+            const queryGet = `
+                SELECT nt.*, bn.ho_ten, bn.ngay_sinh, bn.gioi_tinh
+                FROM nhip_tim nt
+                LEFT JOIN benh_nhan bn ON nt.id_benh_nhan = bn.id
+                WHERE nt.id = ?
+            `;
+            const [newRecord] = await connection.execute(queryGet, [result.insertId]);
+            return {
+                success: true,
+                message: 'Thêm dữ liệu nhịp tim thành công',
+                data: newRecord[0] || null
+            };
         } catch (error) {
             console.error('Lỗi khi thêm dữ liệu nhịp tim:', error);
             throw new Error('Không thể thêm dữ liệu nhịp tim: ' + error.message);
@@ -92,7 +106,9 @@ class nhipTim{
 
             const query = `UPDATE nhip_tim SET ${fields.join(', ')} WHERE id = ?`;
             
-            const [result] = await db.execute(query, values);
+            // Đảm bảo không có undefined trong values
+            const sanitizedValues = values.map(v => v === undefined ? null : v);
+            const [result] = await connection.execute(query, sanitizedValues);
             
             if (result.affectedRows === 0) {
                 return { success: false, message: 'Không tìm thấy bản ghi để cập nhật' };
