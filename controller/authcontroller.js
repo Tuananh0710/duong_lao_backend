@@ -12,9 +12,18 @@ const login = async (req, res, next) => {
         }
 
         // tìm tk
-        const query = so_dien_thoai
-            ? `SELECT * FROM tai_khoan WHERE so_dien_thoai=? AND da_xoa=0`
-            : `SELECT * FROM tai_khoan WHERE email= ? AND da_xoa=0`;
+           const query = `
+            SELECT 
+                tk.*,
+                hsnv.id AS id_dieu_duong
+            FROM tai_khoan tk
+            INNER JOIN ho_so_nhan_vien hsnv 
+                ON hsnv.id_tai_khoan = tk.id
+            WHERE 
+                ${so_dien_thoai ? 'tk.so_dien_thoai = ?' : 'tk.email = ?'}
+                AND tk.da_xoa = 0
+            LIMIT 1
+        `;
 
         const [users] = await connection.execute(query, [so_dien_thoai || email]);
         if (users.length === 0) {
