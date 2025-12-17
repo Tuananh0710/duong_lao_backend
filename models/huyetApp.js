@@ -22,13 +22,13 @@ class huyetAp{
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const value = [
-                id_benh_nhan || null,
-                tam_thu || null,
-                tam_truong || null,
+                id_benh_nhan ,
+                tam_thu,
+                tam_truong ,
                 danh_gia || null,
                 thoi_gian_do || new Date(),
-                vi_tri_do || null,
-                tu_the_khi_do || null,
+                vi_tri_do ,
+                tu_the_khi_do ,
                 ghi_chu || null,
                 muc_do || null,
                 noi_dung_canh_bao || null

@@ -20,12 +20,12 @@ class nhietDo{
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const value=[
-                id_benh_nhan || null,
-                gia_tri_nhiet_do || null,
-                danh_gia || null,
+                id_benh_nhan ,
+                gia_tri_nhiet_do ,
+                danh_gia ,
                 thoi_gian_do || new Date(),
-                vi_tri_do || 'nach', 
-                tinh_trang_luc_do || 'nghi_ngoi', 
+                vi_tri_do , 
+                tinh_trang_luc_do , 
                 ghi_chu || null,
                 muc_do || null,
                 noi_dung_canh_bao|| null

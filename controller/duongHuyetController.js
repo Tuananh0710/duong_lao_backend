@@ -24,7 +24,7 @@ class DuongHuyetController {
             if (gia_tri_duong_huyet < 1.0 || gia_tri_duong_huyet > 33.3) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Giá trị đường huyết không hợp lệ (1.0 - 33.3 mmol/L)'
+                    message: 'Giá trị đường huyết không hợp lệ (70.0 - 180.0 mg/dL)'
                 });
             }
 

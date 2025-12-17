@@ -5,7 +5,7 @@ const morgan= require('morgan');
 const path= require('path');
 
 require('dotenv').config();
-
+process.env.TZ = 'Asia/Ho_Chi_Minh'; 
 const authRoutes= require('./routes/authRoutes');
 const benhNhanRoutes= require('./routes/benhNhanRoutes');
 const thongBaoRoutes= require('./routes/thongBaoRoutes');

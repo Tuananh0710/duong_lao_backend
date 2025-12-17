@@ -19,8 +19,8 @@ class nhipTim{
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const value=[
-                id_benh_nhan || null,
-                gia_tri_nhip_tim || null|| null,
+                id_benh_nhan ,
+                gia_tri_nhip_tim ,
                 danh_gia || null,
                 thoi_gian_do || new Date(),
                 tinh_trang_benh_nhan_khi_do,

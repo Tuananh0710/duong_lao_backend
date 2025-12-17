@@ -20,11 +20,11 @@ class sp02{
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const values = [
-                id_benh_nhan || null,
-                gia_tri_spo2 || null,
+                id_benh_nhan ,
+                gia_tri_spo2 ,
                 thoi_gian_do || new Date(),
-                vi_tri_do || 'ngon_tay_tro', 
-                tinh_trang_ho_hap || 'binh_thuong',
+                vi_tri_do , 
+                tinh_trang_ho_hap ,
                 ghi_chu ?? null,
                 muc_do ?? null,
                 noi_dung_canh_bao ?? null
