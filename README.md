@@ -35,16 +35,14 @@ npm dev
 - `POST /api/auth/login` - Đăng nhập
     Raw body 
         {
-            
+            "so_dien_thoai": "0123456789",
+            "mat_khau": "8888"
         }
 - `GET /api/auth/profile` - Lấy thông tin profile (cần auth)
 
 ### Bệnh nhân
-- `GET /api/benh-nhan` - Lấy danh sách bệnh nhân
-- `GET /api/benh-nhan/:id` - Lấy chi tiết bệnh nhân
-- `POST /api/benh-nhan` - Tạo bệnh nhân mới
-- `PUT /api/benh-nhan/:id` - Cập nhật bệnh nhân
-- `DELETE /api/benh-nhan/:id` - Xóa bệnh nhân
+- `GET /api/benh_nhan/tong_so/:idDieuDuong` - Lấy danh sách bệnh nhân
+- `GET /api/benh_nhan/:id` - Lấy chi tiết bệnh nhân
 
 **Chỉ số sinh tồn:**
 - `GET /api/benh-nhan/:id/chi-so-sinh-ton` - Lấy chỉ số sinh tồn

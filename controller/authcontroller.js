@@ -1,53 +1,79 @@
 const {hashPassword, comparePassword} = require ('../utils/bcrypt');
 const {generateToken,verifyToken} = require('../utils/jwt');
 const connection = require('../config/database');
-const login= async(req,res,next)=>{
-    try{
-        const{so_dien_thoai, email, mat_khau}=req.body;
-        if((!so_dien_thoai && !email)|| !mat_khau){
+const login = async (req, res, next) => {
+    try {
+        const { so_dien_thoai, email, mat_khau } = req.body;
+        
+        if ((!so_dien_thoai && !email) || !mat_khau) {
             return res.status(400).json({
-                success:false,
-                message:'Vui lòng nhập sdt/email hoặc mật khẩu !'
+                success: false,
+                message: 'Vui lòng nhập sdt/email hoặc mật khẩu !'
             });
         }
 
-        // tìm tk
-        const query= so_dien_thoai
-        ?`SELECT * FROM tai_khoan WHERE so_dien_thoai=? AND da_xoa=0`
-        :`SELECT * FROM tai_khoan WHERE email= ? AND da_xoa=0`;
+        // Tìm tài khoản
+        const query = so_dien_thoai
+            ? `SELECT * FROM tai_khoan WHERE so_dien_thoai=? AND da_xoa=0`
+            : `SELECT * FROM tai_khoan WHERE email=? AND da_xoa=0`;
 
-        const [users]= await connection.execute(query,[so_dien_thoai||email]);
-        if(users.length ===0 ){
+        const [users] = await connection.execute(query, [so_dien_thoai || email]);
+        
+        if (users.length === 0) {
             return res.status(401).json({
                 success: false,
-                message:'sdt/email hoặc mật khẩu sai!'
+                message: 'sdt/email hoặc mật khẩu sai!'
             });
         }
-        const user=users[0];
-        if(user.trang_thai !== 'active'){
+        
+        const user = users[0];
+        
+        if (user.trang_thai !== 'active') {
             return res.status(401).json({
                 success: false,
-                message:'tài khoản đã bị khóa hoặc vô hiệu',
+                message: 'tài khoản đã bị khóa hoặc vô hiệu',
             });
         }
-        const isVerifiedPass= await comparePassword(mat_khau,user.mat_khau);
-        if(!isVerifiedPass){
+
+        const isVerifiedPass = await comparePassword(mat_khau, user.mat_khau);
+        
+        if (!isVerifiedPass) {
             return res.status(401).json({
                 success: false,
                 message: 'Sai mật khẩu !'
             });
         }
-        const token=generateToken(user.id);
+
+        let hoSoNhanVien = null;
+        if (user.vai_tro !== 'nguoi_nha') { 
+            const [hoSoResult] = await connection.execute(
+                `SELECT id FROM ho_so_nhan_vien WHERE id_tai_khoan = ?`,
+                [user.id]
+            );
+            
+            if (hoSoResult.length > 0) {
+                hoSoNhanVien = hoSoResult[0];
+            }
+        }
+
+        const token = generateToken(user.id);
 
         delete user.mat_khau;
 
-        res.json({
+        // Chuẩn bị dữ liệu trả về
+        const responseData = {
             success: true,
             message: 'Đăng nhập thành công !',
             token,
-            user
-        });
-    }  catch(error){
+            user: {
+                ...user,
+                ho_so_nhan_vien: hoSoNhanVien
+            }
+        };
+
+        res.json(responseData);
+        
+    } catch (error) {
         next(error);
     }
 };
