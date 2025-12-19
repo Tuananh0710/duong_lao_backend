@@ -152,24 +152,17 @@ const loginNguoiNha = async (req, res, next) => {
         
         if (user.vai_tro === 'nguoi_nha') {
             const [nguoiThanList] = await connection.execute(
-                `SELECT id, id_benh_nhan, ho_ten, moi_quan_he FROM nguoi_than_benh_nhan 
+                `SELECT id AS id_nguoi_than FROM nguoi_than_benh_nhan 
                  WHERE id_tai_khoan = ?`,
                 [user.id]
             );
             
             if (nguoiThanList.length > 0) {
                 thongTinBoSung = {
-                    loai: 'nguoi_than',
-                    data: nguoiThanList[0]
+                    ...nguoiThanList[0]
                 };
             }
-        } else if (user.vai_tro === 'super_admin') {
-            thongTinBoSung = {
-                loai: 'admin',
-                data: { quyen_han: 'toan_quyen' }
-            };
         }
-
         const token = generateToken(user.id);
 
         delete user.mat_khau;
@@ -181,7 +174,7 @@ const loginNguoiNha = async (req, res, next) => {
             token,
             user: {
                 ...user,
-                thong_tin_bo_sung: thongTinBoSung
+                ...thongTinBoSung
             }
         };
 
