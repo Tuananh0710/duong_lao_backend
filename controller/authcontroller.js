@@ -65,7 +65,7 @@ const login = async (req, res, next) => {
             token,
             user: {
                 ...user,
-                ho_so_nhan_vien: hoSoNhanVien
+                ...hoSoNhanVien
             }
         };
 
