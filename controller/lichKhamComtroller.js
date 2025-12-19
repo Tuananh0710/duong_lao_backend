@@ -30,10 +30,9 @@ class lichKhamController{
                 return res.status(200).json({
                     success: true,
                     message: 'Không có lịch khám nào đang chờ',
-                    data: {
-                        tong_so: 0,
-                        danh_sach: []
-                    }
+                    tong_so: 0,
+                    danh_sach: []
+                    
                 });
             }
             

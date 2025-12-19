@@ -13,7 +13,7 @@ class lichKham{
                 ngay_tao,
                 ngay_cap_nhat
             FROM lich_kham
-            WHERE id_benh_nhan = ? AND trang_thai= 'cho_kham' AND thoi_gian >= CURDATE()
+            WHERE id_benh_nhan = ? AND trang_thai = 'cho_kham' AND thoi_gian >= CURDATE()
             `;
             if(!idBenhNhan){
                 throw new Error('thieu tham so can thiet');

@@ -63,7 +63,43 @@ const authorize = (...roles) => {
     next();
   };
 };
+const checkAppPermission = (appType) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Chưa xác thực' 
+      });
+    }
+
+    const userRole = req.user.vai_tro;
+    
+    // Định nghĩa các role được phép vào từng app
+    const appPermissions = {
+      'nguoi_nha_app': ['nguoi_nha'], // Chỉ người nhà
+      'dieu_duong_app': ['super_admin', 'quan_ly_y_te', 'quan_ly_nhan_su', 'dieu_duong', 'dieu_duong_truong', 'marketing'],
+      'all': ['super_admin', 'quan_ly_y_te', 'quan_ly_nhan_su', 'dieu_duong', 'dieu_duong_truong', 'nguoi_nha', 'marketing']
+    };
+
+    if (!appPermissions[appType]) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Loại app không hợp lệ' 
+      });
+    }
+
+    if (!appPermissions[appType].includes(userRole)) {
+      return res.status(403).json({ 
+        success: false, 
+        message: `Tài khoản ${userRole} không có quyền truy cập vào app này` 
+      });
+    }
+
+    next();
+  };
+};
 module.exports={
     authenticate,
-    authorize
+    authorize,
+    checkAppPermission
 }

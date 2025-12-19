@@ -177,6 +177,84 @@ class BenhNhanController {
             });
         }
     }
+    static async getDsBenhNhanByNguoiNha(req, res) {
+        try {
+            // Lấy id từ req.user (đã được xác thực qua middleware)
+            const idTaiKhoanNguoiNha = req.user.id;
+            const vaiTro = req.user.vai_tro;
+
+            // Chỉ cho phép người nhà
+            if (vaiTro !== 'nguoi_nha') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Chỉ người nhà mới có quyền truy cập'
+                });
+            }
+
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const search = req.query.search || '';
+            
+            if (page < 1) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Số trang phải lớn hơn 0'
+                });
+            }
+            
+            if (limit < 1 || limit > 100) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Giới hạn phải từ 1 đến 100 bản ghi'
+                });
+            }
+            
+            console.log('NguoiNha Controller params:', { 
+                idTaiKhoanNguoiNha, 
+                page, 
+                limit, 
+                search 
+            });
+            
+            // Gọi model
+            const result = await BenhNhan.getDsBenhNhanByNguoiNha(idTaiKhoanNguoiNha, page, limit, search);
+            
+            // Lấy danh sách bệnh nhân
+            const data = result.data || [];
+
+            const total = result.total || 0;
+            const totalPages = Math.ceil(total / limit);
+            
+            res.json({
+                success: true,
+                message: data.length > 0 
+                    ? `Danh sách bệnh nhân (${data.length} bản ghi)` 
+                    : 'Không tìm thấy bệnh nhân nào',
+                benh_nhan: data,
+                id_tai_khoan: idTaiKhoanNguoiNha,
+                total: total,
+                page: page,
+                limit: limit,
+                totalPage: totalPages
+            });
+            
+        } catch (error) {
+            console.error('Error in controller getDsBenhNhanByNguoiNha:', error);
+            
+            if (error.message === 'Thiếu tham số idTaiKhoanNguoiNha') {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+            
+            res.status(500).json({
+                success: false,
+                message: 'Lỗi server khi lấy danh sách bệnh nhân',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
 }
 
 module.exports = BenhNhanController;
