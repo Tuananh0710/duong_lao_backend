@@ -63,6 +63,41 @@ class lichChungController {
             });
         }
     }
+    static async getLichChungGanNhat(req, res) {
+        try {
+            const { id_benh_nhan } = req.params;
+            const { limit = 3 } = req.query;
+            
+            if (!id_benh_nhan) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Thiếu ID bệnh nhân'
+                });
+            }
+
+            const danhSach = await lichChung.getLichChungGanNhat(
+                id_benh_nhan, 
+                parseInt(limit)
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: danhSach.length > 0 
+                    ? 'Lấy lịch chung gần nhất thành công' 
+                    : 'Không có sự kiện hoặc lịch khám nào sắp tới',
+                tong_so: danhSach.length,
+                gioi_han: parseInt(limit),
+                danh_sach: danhSach
+            });
+
+        } catch (error) {
+            console.error('Lỗi controller lấy lịch chung gần nhất:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi hệ thống'
+            });
+        }
+    }
 }
 
 module.exports = lichChungController;

@@ -2,34 +2,36 @@ const DuongHuyetModel = require('../models/duongHuyet');
 
 class DuongHuyetController {
 
-    static async create(req, res) {
-        try {
-            const { 
-                id_benh_nhan, 
-                gia_tri_duong_huyet,
-                vi_tri_lay_mau,
-                trieu_chung_kem_theo,
-                thoi_gian_do
-            } = req.body;
-            
-            // Validate dữ liệu đầu vào
-            if (!id_benh_nhan || gia_tri_duong_huyet === undefined) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Vui lòng cung cấp đầy đủ thông tin: id_benh_nhan, gia_tri_duong_huyet'
-                });
-            }
+   static async create(req, res) {
+    try {
+        const { 
+            id_benh_nhan, 
+            gia_tri_duong_huyet,
+            vi_tri_lay_mau,
+            trieu_chung_kem_theo,
+            thoi_gian_do,
+            thoi_diem_do  
+        } = req.body;
+        
+        // Validate dữ liệu đầu vào
+        if (!id_benh_nhan || gia_tri_duong_huyet === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng cung cấp đầy đủ thông tin: id_benh_nhan, gia_tri_duong_huyet'
+            });
+        }
 
-            // Kiểm tra giá trị đường huyết hợp lệ
-            if (gia_tri_duong_huyet < 1.0 || gia_tri_duong_huyet > 33.3) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Giá trị đường huyết không hợp lệ (70.0 - 180.0 mg/dL)'
-                });
-            }
+        // Kiểm tra giá trị đường huyết hợp lệ (mmol/L)
+        if (gia_tri_duong_huyet < 1.0 || gia_tri_duong_huyet > 33.3) {
+            return res.status(400).json({
+                success: false,
+                message: 'Giá trị đường huyết không hợp lệ (1.0 - 33.3 mmol/L)'
+            });
+        }
 
-            // Xác định thời điểm đo (dựa vào giờ hiện tại và triệu chứng)
-            let measurementTime = 'khac';
+        // Xác định thời điểm đo nếu không được cung cấp
+        let measurementTime = thoi_diem_do || 'khac';
+        if (!thoi_diem_do) {
             const currentHour = new Date().getHours();
             const symptoms = trieu_chung_kem_theo ? trieu_chung_kem_theo.toLowerCase() : '';
             
@@ -46,34 +48,35 @@ class DuongHuyetController {
             } else {
                 measurementTime = 'toi';
             }
-
-            // Tự động đánh giá đường huyết
-            const evaluation = DuongHuyetModel.evaluateBloodSugar(gia_tri_duong_huyet, measurementTime);
-            
-            const data = {
-                ...req.body,
-                ...evaluation,
-                thoi_gian_do: req.body.thoi_gian_do || new Date(),
-                vi_tri_lay_mau: vi_tri_lay_mau || 'ngon_tay'
-            };
-
-            const result = await DuongHuyetModel.create(data);
-            
-            res.status(201).json({
-                success: true,
-                message: result.message,
-                // duong_huyet: result.data,
-                // measurement_time: measurementTime
-            });
-        } catch (error) {
-            console.error('Lỗi trong controller create:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Lỗi server',
-                error: error.message
-            });
         }
+
+        // Tự động đánh giá đường huyết
+        const evaluation = DuongHuyetModel.evaluateBloodSugar(gia_tri_duong_huyet, measurementTime);
+        
+        const data = {
+            ...req.body,
+            ...evaluation,
+            thoi_gian_do: thoi_gian_do || new Date(),
+            thoi_diem_do: measurementTime,  // Thêm thời điểm đo
+            vi_tri_lay_mau: vi_tri_lay_mau || 'ngon_tay'
+        };
+
+        const result = await DuongHuyetModel.create(data);
+        
+        res.status(201).json({
+            success: true,
+            message: result.message,
+            data: result.data
+        });
+    } catch (error) {
+        console.error('Lỗi trong controller create:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server',
+            error: error.message
+        });
     }
+}
 
 
     static async getById(req, res) {
@@ -171,7 +174,7 @@ class DuongHuyetController {
                     // Giả sử đo trước ăn nếu không có thông tin
                     const measurementTime = 'truoc_an';
                     const evaluation = DuongHuyetModel.evaluateBloodSugar(glucose, measurementTime);
-                    updateData.danh_gia = evaluation.danh_gia;
+                    updateData.danh_gia_chi_tiet = evaluation.danh_gia_chi_tiet;
                     updateData.muc_do = evaluation.muc_do;
                     updateData.noi_dung_canh_bao = evaluation.noi_dung_canh_bao;
                 }

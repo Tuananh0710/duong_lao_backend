@@ -7,7 +7,7 @@ class huyetAp{
                 id_benh_nhan,
                 tam_thu,
                 tam_truong,
-                danh_gia,
+                danh_gia_chi_tiet,
                 thoi_gian_do,
                 vi_tri_do,
                 tu_the_khi_do,
@@ -17,7 +17,7 @@ class huyetAp{
             }=data;
             const query= `
             INSERT INTO huyet_ap 
-                (id_benh_nhan, tam_thu, tam_truong, danh_gia, thoi_gian_do, 
+                (id_benh_nhan, tam_thu, tam_truong, danh_gia_chi_tiet, thoi_gian_do, 
                  vi_tri_do, tu_the_khi_do, ghi_chu, muc_do, noi_dung_canh_bao)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
@@ -25,7 +25,7 @@ class huyetAp{
                 id_benh_nhan ,
                 tam_thu,
                 tam_truong ,
-                danh_gia || null,
+                danh_gia_chi_tiet || null,
                 thoi_gian_do || new Date(),
                 vi_tri_do ,
                 tu_the_khi_do ,
@@ -102,7 +102,7 @@ class huyetAp{
             mucDo = 'binh_thuong';
         }
 
-        return { danh_gia: danhGia, muc_do: mucDo, noi_dung_canh_bao: noiDungCanhBao };
+        return { danh_gia_chi_tiet: danhGia, muc_do: mucDo, noi_dung_canh_bao: noiDungCanhBao };
     };
 }
 module.exports=huyetAp

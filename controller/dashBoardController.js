@@ -6,15 +6,19 @@ const lichThamBenh = require('../models/lichThamBenh');
 class dashBoard {
     static async getAll(req, res) {
         try {
-            // Lấy idDieuDuong từ req.user thay vì req.params
-            const idDieuDuong = req.user?.id;
+            // Lấy id_nhan_vien từ req.user (token payload)
+            const idNhanVien = req.user?.id_nhan_vien;
+            const idTaiKhoan = req.user?.id_tai_khoan;
             
-            if (!idDieuDuong || isNaN(idDieuDuong)) {
+            if (!idNhanVien) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Không tìm thấy thông tin điều dưỡng hoặc ID không hợp lệ'
+                    message: 'Không tìm thấy thông tin nhân viên. Token không hợp lệ.'
                 });
             }
+            
+            // Đổi tên biến để phù hợp với tên hàm model (nếu cần)
+            const idDieuDuong = idNhanVien;
             
             const [
                 tong_so_benh_nhan,
@@ -26,7 +30,7 @@ class dashBoard {
                     console.error('Lỗi khi lấy tổng số bệnh nhân:', err);
                     return 0;
                 }),
-                congViec.getCongViecByDieuDuong(parseInt(idDieuDuong)).catch(err => {
+                congViec.getCongViecByDieuDuong(parseInt(idTaiKhoan)).catch(err => {
                     console.error('Lỗi khi lấy tổng số công việc:', err);
                     return 0;
                 }),
@@ -44,10 +48,11 @@ class dashBoard {
                 success: true,
                 message: 'Lấy dữ liệu dashboard thành công',
                 tong_so_benh_nhan: tong_so_benh_nhan || 0,
-                tong_so_cong_viec: tong_so_cong_viec || 0,
+                ...tong_so_cong_viec || 0,
                 tong_so_lich: tong_so_lich || 0,
                 tong_so_thong_bao: tong_so_thong_bao || 0,
-                id_dieu_duong: parseInt(idDieuDuong),
+                id_nhan_vien: parseInt(idNhanVien),
+                id_tai_khoan: parseInt(idTaiKhoan)
             });
             
         } catch (error) {

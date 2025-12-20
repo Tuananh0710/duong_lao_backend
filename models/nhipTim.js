@@ -5,7 +5,7 @@ class nhipTim{
             const {
                 id_benh_nhan,
                 gia_tri_nhip_tim,
-                danh_gia,
+                danh_gia_chi_tiet,
                 thoi_gian_do,
                 tinh_trang_benh_nhan_khi_do,
                 ghi_chu,
@@ -14,14 +14,14 @@ class nhipTim{
             }=data;
             const query=`
             INSERT INTO nhip_tim 
-                (id_benh_nhan, gia_tri_nhip_tim, danh_gia, thoi_gian_do, 
+                (id_benh_nhan, gia_tri_nhip_tim, danh_gia_chi_tiet, thoi_gian_do, 
                  tinh_trang_benh_nhan_khi_do, ghi_chu, muc_do, noi_dung_canh_bao)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const value=[
                 id_benh_nhan ,
                 gia_tri_nhip_tim ,
-                danh_gia || null,
+                danh_gia_chi_tiet || null,
                 thoi_gian_do || new Date(),
                 tinh_trang_benh_nhan_khi_do,
                 ghi_chu || null,

@@ -90,8 +90,8 @@ class nhipTimController{
             const updateData= req.body;
             if(updateData.gia_tri_nhip_tim){
                 const heartRate = updateData.gia_tri_nhip_tim;
-                const evaluation = NhipTimModel.evaluateHeartRate(heartRate);
-                updateData.danh_gia = evaluation.danh_gia;
+                const evaluation = nhipTim.evaluateHeartRate(heartRate);
+                updateData.danh_gia_chi_tiet = evaluation.danh_gia_chi_tiet;
                 updateData.muc_do = evaluation.muc_do;
                 updateData.noi_dung_canh_bao = evaluation.noi_dung_canh_bao;
             }

@@ -43,7 +43,7 @@ const login = async (req, res, next) => {
             });
         }
 
-        let hoSoNhanVien = null;
+        let idNhanVien = null;
         if (user.vai_tro !== 'nguoi_nha') { 
             const [hoSoResult] = await connection.execute(
                 `SELECT id AS id_nhan_vien FROM ho_so_nhan_vien WHERE id_tai_khoan = ?`,
@@ -51,11 +51,20 @@ const login = async (req, res, next) => {
             );
             
             if (hoSoResult.length > 0) {
-                hoSoNhanVien = hoSoResult[0];
+                idNhanVien = hoSoResult[0].id_nhan_vien;
             }
         }
 
-        const token = generateToken(user.id);
+        const tokenPayload = {
+            id_tai_khoan: user.id,
+            vai_tro: user.vai_tro
+        };
+        
+        if (idNhanVien) {
+            tokenPayload.id_nhan_vien = idNhanVien;
+        }
+        
+        const token = generateToken(tokenPayload);
 
         delete user.mat_khau;
 
@@ -65,7 +74,7 @@ const login = async (req, res, next) => {
             token,
             user: {
                 ...user,
-                ...hoSoNhanVien
+                id_nhan_vien: idNhanVien
             }
         };
 
@@ -149,6 +158,10 @@ const loginNguoiNha = async (req, res, next) => {
         }
 
         let thongTinBoSung = null;
+        let tokenPayload = {
+            id_tai_khoan: user.id,
+            vai_tro: user.vai_tro
+        };
         
         if (user.vai_tro === 'nguoi_nha') {
             const [nguoiThanList] = await connection.execute(
@@ -161,13 +174,15 @@ const loginNguoiNha = async (req, res, next) => {
                 thongTinBoSung = {
                     ...nguoiThanList[0]
                 };
+                // Thêm id_nguoi_than vào token nếu có
+                tokenPayload.id_nguoi_than = nguoiThanList[0].id_nguoi_than;
             }
         }
-        const token = generateToken(user.id);
+
+        const token = generateToken(tokenPayload);
 
         delete user.mat_khau;
 
-        // Chuẩn bị dữ liệu trả về
         const responseData = {
             success: true,
             message: 'Đăng nhập thành công!',

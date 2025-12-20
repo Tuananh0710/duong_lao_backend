@@ -2,52 +2,57 @@ const db = require('../config/database');
 
 class DuongHuyetModel {
     static async create(data) {
-        try {
-            const {
-                id_benh_nhan,
-                gia_tri_duong_huyet,
-                danh_gia,
-                thoi_gian_do,
-                vi_tri_lay_mau,
-                trieu_chung_kem_theo,
-                ghi_chu,
-                muc_do,
-                noi_dung_canh_bao
-            } = data;
+    try {
+        const {
+            id_benh_nhan,
+            gia_tri_duong_huyet,
+            thoi_gian_do,
+            thoi_diem_do,  // Thêm thời điểm đo
+            vi_tri_lay_mau,
+            trieu_chung_kem_theo,
+            ghi_chu,
+            muc_do,
+            noi_dung_canh_bao,
+            id_cau_hinh_chi_so_canh_bao,
+            danh_gia_chi_tiet  // Đổi từ danh_gia thành danh_gia_chi_tiet
+        } = data;
 
-            const query = `
-                INSERT INTO duong_huyet 
-                (id_benh_nhan, gia_tri_duong_huyet, danh_gia, thoi_gian_do, 
-                 vi_tri_lay_mau, trieu_chung_kem_theo, ghi_chu, muc_do, noi_dung_canh_bao)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
+        const query = `
+            INSERT INTO duong_huyet 
+            (id_benh_nhan, gia_tri_duong_huyet, thoi_gian_do, thoi_diem_do, 
+             vi_tri_lay_mau, trieu_chung_kem_theo, ghi_chu, muc_do, 
+             noi_dung_canh_bao, id_cau_hinh_chi_so_canh_bao, danh_gia_chi_tiet)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
 
-            const values = [
-                id_benh_nhan ,
-                gia_tri_duong_huyet,
-                danh_gia || null,
-                thoi_gian_do || new Date(),
-                vi_tri_lay_mau || 'ngon_tay', 
-                trieu_chung_kem_theo ,
-                ghi_chu || null,
-                muc_do || null,
-                noi_dung_canh_bao|| null
-            ];
+        const values = [
+            id_benh_nhan,
+            gia_tri_duong_huyet,
+            thoi_gian_do || new Date(),
+            thoi_diem_do || 'khac',  // Thêm giá trị mặc định
+            vi_tri_lay_mau || 'ngon_tay',
+            trieu_chung_kem_theo || null,
+            ghi_chu || null,
+            muc_do || null,
+            noi_dung_canh_bao || null,
+            id_cau_hinh_chi_so_canh_bao || null,
+            danh_gia_chi_tiet || null  // Sửa thành danh_gia_chi_tiet
+        ];
 
-            const [result] = await db.execute(query, values);
-            
-            const newRecord = await this.findById(result.insertId);
-            
-            return {
-                success: true,
-                message: 'Thêm dữ liệu đường huyết thành công',
-                data: newRecord
-            };
-        } catch (error) {
-            console.error('Lỗi khi thêm dữ liệu đường huyết:', error);
-            throw new Error('Không thể thêm dữ liệu đường huyết: ' + error.message);
-        }
+        const [result] = await db.execute(query, values);
+        
+        const newRecord = await this.findById(result.insertId);
+        
+        return {
+            success: true,
+            message: 'Thêm dữ liệu đường huyết thành công',
+            data: newRecord
+        };
+    } catch (error) {
+        console.error('Lỗi khi thêm dữ liệu đường huyết:', error);
+        throw new Error('Không thể thêm dữ liệu đường huyết: ' + error.message);
     }
+}
     static async findById(id) {
         try {
             const query = `
@@ -91,8 +96,8 @@ class DuongHuyetModel {
             }
 
             if (filters.danh_gia) {
-                query += ' AND dh.danh_gia = ?';
-                values.push(filters.danh_gia);
+                query += ' AND dh.danh_gia_chi_tiet = ?';
+                values.push(filters.danh_gia_chi_tiet);
             }
 
             // Lọc theo thời điểm trong ngày
@@ -140,51 +145,47 @@ class DuongHuyetModel {
         }
     }
 
-    static async update(id, data) {
-        try {
-            const fields = [];
-            const values = [];
+   static async update(id, data) {
+    try {
+        const fields = [];
+        const values = [];
 
-            // Xây dựng câu truy vấn động
-            Object.keys(data).forEach(key => {
-                if (data[key] !== undefined) {
-                    fields.push(`${key} = ?`);
-                    values.push(data[key]);
-                }
-            });
-
-            if (fields.length === 0) {
-                return { success: false, message: 'Không có dữ liệu để cập nhật' };
+        // Xây dựng câu truy vấn động
+        Object.keys(data).forEach(key => {
+            if (data[key] !== undefined) {
+                fields.push(`${key} = ?`);
+                values.push(data[key]);
             }
+        });
 
-            // Thêm ngày cập nhật
-            fields.push('ngay_cap_nhat = CURRENT_TIMESTAMP');
-            
-            // Thêm id vào values
-            values.push(id);
-
-            const query = `UPDATE duong_huyet SET ${fields.join(', ')} WHERE id = ?`;
-            
-            const [result] = await db.execute(query, values);
-            
-            if (result.affectedRows === 0) {
-                return { success: false, message: 'Không tìm thấy bản ghi để cập nhật' };
-            }
-
-            // Lấy lại dữ liệu đã cập nhật
-            const updatedRecord = await this.findById(id);
-            
-            return {
-                success: true,
-                message: 'Cập nhật dữ liệu đường huyết thành công',
-                data: updatedRecord
-            };
-        } catch (error) {
-            console.error('Lỗi khi cập nhật dữ liệu đường huyết:', error);
-            throw new Error('Không thể cập nhật dữ liệu đường huyết: ' + error.message);
+        if (fields.length === 0) {
+            return { success: false, message: 'Không có dữ liệu để cập nhật' };
         }
-    }
 
+        // Thêm id vào values
+        values.push(id);
+
+        const query = `UPDATE duong_huyet SET ${fields.join(', ')} WHERE id = ?`;
+        
+        const [result] = await db.execute(query, values);
+        
+        if (result.affectedRows === 0) {
+            return { success: false, message: 'Không tìm thấy bản ghi để cập nhật' };
+        }
+
+        // Lấy lại dữ liệu đã cập nhật
+        const updatedRecord = await this.findById(id);
+        
+        return {
+            success: true,
+            message: 'Cập nhật dữ liệu đường huyết thành công',
+            data: updatedRecord
+        };
+    } catch (error) {
+        console.error('Lỗi khi cập nhật dữ liệu đường huyết:', error);
+        throw new Error('Không thể cập nhật dữ liệu đường huyết: ' + error.message);
+    }
+}
 
     static async delete(id) {
         try {
@@ -206,89 +207,87 @@ class DuongHuyetModel {
         }
     }
 
-    /**
-     * Tự động đánh giá đường huyết dựa trên giá trị (mmol/L)
-     */
-    static evaluateBloodSugar(glucoseValue, measurementTime = 'truoc_an') {
-        let danhGia = 'binh_thuong';
-        let mucDo = 'binh_thuong';
-        let noiDungCanhBao = null;
+    
+   static evaluateBloodSugar(glucoseValue, measurementTime = 'truoc_an') {
+    let danhGiaChiTiet = 'Bình thường';
+    let mucDo = 'binh_thuong';
+    let noiDungCanhBao = null;
 
-        // Đánh giá theo tiêu chuẩn ADA (American Diabetes Association)
-        if (measurementTime === 'truoc_an' || measurementTime === 'doi') {
-            // Trước ăn hoặc đói
-            if (glucoseValue < 3.9) {
-                danhGia = 'thap_nang';
-                mucDo = 'nguy_hiem';
-                noiDungCanhBao = 'Hạ đường huyết nặng - Cần xử trí ngay';
-            } else if (glucoseValue < 4.0) {
-                danhGia = 'thap_nhe';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Hạ đường huyết nhẹ';
-            } else if (glucoseValue >= 4.0 && glucoseValue <= 5.6) {
-                danhGia = 'binh_thuong';
-                mucDo = 'binh_thuong';
-            } else if (glucoseValue >= 5.7 && glucoseValue <= 6.9) {
-                danhGia = 'cao_nhe';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Tiền đái tháo đường';
-            } else if (glucoseValue >= 7.0) {
-                danhGia = 'cao_vua';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Đái tháo đường - Cần theo dõi';
-            } else if (glucoseValue >= 11.1) {
-                danhGia = 'cao_nang';
-                mucDo = 'nguy_hiem';
-                noiDungCanhBao = 'Đường huyết rất cao - Nguy cơ hôn mê';
-            }
-        } else if (measurementTime === 'sau_an') {
-            // Sau ăn 2 giờ
-            if (glucoseValue < 3.9) {
-                danhGia = 'thap_nang';
-                mucDo = 'nguy_hiem';
-                noiDungCanhBao = 'Hạ đường huyết nặng - Cần xử trí ngay';
-            } else if (glucoseValue < 4.0) {
-                danhGia = 'thap_nhe';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Hạ đường huyết nhẹ';
-            } else if (glucoseValue >= 4.0 && glucoseValue <= 7.8) {
-                danhGia = 'binh_thuong';
-                mucDo = 'binh_thuong';
-            } else if (glucoseValue >= 7.9 && glucoseValue <= 11.0) {
-                danhGia = 'cao_nhe';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Đường huyết sau ăn cao';
-            } else if (glucoseValue >= 11.1) {
-                danhGia = 'cao_vua';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Đường huyết sau ăn rất cao';
-            }
-        } else {
-            // Mặc định
-            if (glucoseValue < 3.9) {
-                danhGia = 'thap_nang';
-                mucDo = 'nguy_hiem';
-            } else if (glucoseValue >= 3.9 && glucoseValue <= 6.1) {
-                danhGia = 'binh_thuong';
-                mucDo = 'binh_thuong';
-            } else if (glucoseValue >= 6.2 && glucoseValue <= 7.8) {
-                danhGia = 'cao_nhe';
-                mucDo = 'canh_bao';
-            } else if (glucoseValue >= 7.9 && glucoseValue <= 11.0) {
-                danhGia = 'cao_vua';
-                mucDo = 'canh_bao';
-            } else {
-                danhGia = 'cao_nang';
-                mucDo = 'nguy_hiem';
-            }
+    // Đánh giá theo tiêu chuẩn ADA (American Diabetes Association)
+    if (measurementTime === 'truoc_an' || measurementTime === 'doi') {
+        // Trước ăn hoặc đói
+        if (glucoseValue < 3.9) {
+            danhGiaChiTiet = 'Hạ đường huyết nặng';
+            mucDo = 'nguy_hiem';
+            noiDungCanhBao = 'Hạ đường huyết nặng - Cần xử trí ngay';
+        } else if (glucoseValue < 4.0) {
+            danhGiaChiTiet = 'Hạ đường huyết nhẹ';
+            mucDo = 'canh_bao';
+            noiDungCanhBao = 'Hạ đường huyết nhẹ';
+        } else if (glucoseValue >= 4.0 && glucoseValue <= 5.6) {
+            danhGiaChiTiet = 'Bình thường';
+            mucDo = 'binh_thuong';
+        } else if (glucoseValue >= 5.7 && glucoseValue <= 6.9) {
+            danhGiaChiTiet = 'Tiền đái tháo đường';
+            mucDo = 'canh_bao';
+            noiDungCanhBao = 'Tiền đái tháo đường';
+        } else if (glucoseValue >= 7.0 && glucoseValue < 11.1) {
+            danhGiaChiTiet = 'Đái tháo đường';
+            mucDo = 'canh_bao';
+            noiDungCanhBao = 'Đái tháo đường - Cần theo dõi';
+        } else if (glucoseValue >= 11.1) {
+            danhGiaChiTiet = 'Đường huyết rất cao';
+            mucDo = 'nguy_hiem';
+            noiDungCanhBao = 'Đường huyết rất cao - Nguy cơ hôn mê';
         }
-
-        return { 
-            danh_gia: danhGia, 
-            muc_do: mucDo, 
-            noi_dung_canh_bao: noiDungCanhBao 
-        };
+    } else if (measurementTime === 'sau_an') {
+        // Sau ăn 2 giờ
+        if (glucoseValue < 3.9) {
+            danhGiaChiTiet = 'Hạ đường huyết nặng';
+            mucDo = 'nguy_hiem';
+            noiDungCanhBao = 'Hạ đường huyết nặng - Cần xử trí ngay';
+        } else if (glucoseValue < 4.0) {
+            danhGiaChiTiet = 'Hạ đường huyết nhẹ';
+            mucDo = 'canh_bao';
+            noiDungCanhBao = 'Hạ đường huyết nhẹ';
+        } else if (glucoseValue >= 4.0 && glucoseValue <= 7.8) {
+            danhGiaChiTiet = 'Bình thường';
+            mucDo = 'binh_thuong';
+        } else if (glucoseValue >= 7.9 && glucoseValue <= 11.0) {
+            danhGiaChiTiet = 'Đường huyết sau ăn cao';
+            mucDo = 'canh_bao';
+            noiDungCanhBao = 'Đường huyết sau ăn cao';
+        } else if (glucoseValue >= 11.1) {
+            danhGiaChiTiet = 'Đường huyết sau ăn rất cao';
+            mucDo = 'canh_bao';
+            noiDungCanhBao = 'Đường huyết sau ăn rất cao';
+        }
+    } else {
+        // Mặc định
+        if (glucoseValue < 3.9) {
+            danhGiaChiTiet = 'Hạ đường huyết';
+            mucDo = 'nguy_hiem';
+        } else if (glucoseValue >= 3.9 && glucoseValue <= 6.1) {
+            danhGiaChiTiet = 'Bình thường';
+            mucDo = 'binh_thuong';
+        } else if (glucoseValue >= 6.2 && glucoseValue <= 7.8) {
+            danhGiaChiTiet = 'Đường huyết cao nhẹ';
+            mucDo = 'canh_bao';
+        } else if (glucoseValue >= 7.9 && glucoseValue <= 11.0) {
+            danhGiaChiTiet = 'Đường huyết cao vừa';
+            mucDo = 'canh_bao';
+        } else {
+            danhGiaChiTiet = 'Đường huyết cao nặng';
+            mucDo = 'nguy_hiem';
+        }
     }
+
+    return { 
+        danh_gia_chi_tiet: danhGiaChiTiet,  
+        muc_do: mucDo, 
+        noi_dung_canh_bao: noiDungCanhBao 
+    };
+}
 
 }
 

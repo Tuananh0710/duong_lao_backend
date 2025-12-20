@@ -179,8 +179,8 @@ class BenhNhanController {
     }
     static async getDsBenhNhanByNguoiNha(req, res) {
         try {
-            // Lấy id từ req.user (đã được xác thực qua middleware)
-            const idTaiKhoanNguoiNha = req.user.id;
+            
+            const idTaiKhoanNguoiNha = req.user.id_nguoi_than;
             const vaiTro = req.user.vai_tro;
 
             // Chỉ cho phép người nhà

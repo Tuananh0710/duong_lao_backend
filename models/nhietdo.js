@@ -5,7 +5,7 @@ class nhietDo{
             const {
                 id_benh_nhan,
                 gia_tri_nhiet_do,
-                danh_gia,
+                danh_gia_chi_tiet,
                 thoi_gian_do,
                 vi_tri_do,
                 tinh_trang_luc_do,
@@ -15,14 +15,14 @@ class nhietDo{
             }=data;
             const query=`
                 INSERT INTO nhiet_do 
-                (id_benh_nhan, gia_tri_nhiet_do, danh_gia, thoi_gian_do, 
+                (id_benh_nhan, gia_tri_nhiet_do, danh_gia_chi_tiet, thoi_gian_do, 
                  vi_tri_do, tinh_trang_luc_do, ghi_chu, muc_do, noi_dung_canh_bao)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const value=[
                 id_benh_nhan ,
                 gia_tri_nhiet_do ,
-                danh_gia ,
+                danh_gia_chi_tiet ,
                 thoi_gian_do || new Date(),
                 vi_tri_do , 
                 tinh_trang_luc_do , 
@@ -188,7 +188,7 @@ class nhietDo{
         }
 
         return { 
-            danh_gia: danhGia, 
+            danh_gia_chi_tiet: danhGia, 
             muc_do: mucDo, 
             noi_dung_canh_bao: noiDungCanhBao 
         };

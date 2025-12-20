@@ -1,49 +1,61 @@
-const connection= require('../config/database');
 
-class sp02{
-    static async create(data){
+const connection = require('../config/database');
+
+class sp02 {
+    static async create(data) {
         try {
             const {
                 id_benh_nhan,
                 gia_tri_spo2,
+                pi,
                 thoi_gian_do,
                 vi_tri_do,
                 tinh_trang_ho_hap,
                 ghi_chu,
                 muc_do,
-                noi_dung_canh_bao
-            }= data;
+                noi_dung_canh_bao,
+                id_cau_hinh_chi_so_canh_bao,
+                danh_gia_chi_tiet
+            } = data;
+
             const query = `
                 INSERT INTO spo2 
-                (id_benh_nhan, gia_tri_spo2, thoi_gian_do, 
-                 vi_tri_do, tinh_trang_ho_hap, ghi_chu, muc_do, noi_dung_canh_bao)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (id_benh_nhan, gia_tri_spo2, pi, thoi_gian_do, 
+                 vi_tri_do, tinh_trang_ho_hap, ghi_chu, muc_do, 
+                 noi_dung_canh_bao, id_cau_hinh_chi_so_canh_bao, danh_gia_chi_tiet)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
+
             const values = [
-                id_benh_nhan ,
-                gia_tri_spo2 ,
+                id_benh_nhan,
+                gia_tri_spo2,
+                pi ?? null,
                 thoi_gian_do || new Date(),
-                vi_tri_do , 
-                tinh_trang_ho_hap ,
+                vi_tri_do || 'ngon_tay_tro',
+                tinh_trang_ho_hap || 'binh_thuong',
                 ghi_chu ?? null,
-                muc_do ?? null,
-                noi_dung_canh_bao ?? null
+                muc_do ?? 'binh_thuong',
+                noi_dung_canh_bao ?? null,
+                id_cau_hinh_chi_so_canh_bao ?? null,
+                danh_gia_chi_tiet ?? null
             ];
+
             // Đảm bảo không có undefined trong values
             const sanitizedValues = values.map(v => v === undefined ? null : v);
             const [result] = await connection.execute(query, sanitizedValues);
             const newRecord = await this.findById(result.insertId);
-             return {
+
+            return {
                 success: true,
                 message: 'Thêm dữ liệu SpO2 thành công',
-                ...newRecord
+                data: newRecord
             };
         } catch (error) {
             console.error('Lỗi khi thêm dữ liệu SpO2:', error);
             throw new Error('Không thể thêm dữ liệu SpO2: ' + error.message);
-
         }
     }
+
     static async findById(id) {
         try {
             const query = `
@@ -58,8 +70,9 @@ class sp02{
             console.error('Lỗi khi lấy dữ liệu SpO2 theo ID:', error);
             throw new Error('Không thể lấy dữ liệu SpO2: ' + error.message);
         }
-    } 
-     static async findByBenhNhan(idBenhNhan, filters = {}) {
+    }
+
+    static async findByBenhNhan(idBenhNhan, filters = {}) {
         try {
             let query = `
                 SELECT s.*, bn.ho_ten, bn.ngay_sinh, bn.gioi_tinh
@@ -67,7 +80,7 @@ class sp02{
                 LEFT JOIN benh_nhan bn ON s.id_benh_nhan = bn.id
                 WHERE s.id_benh_nhan = ?
             `;
-            
+
             const values = [idBenhNhan];
 
             if (filters.from_date) {
@@ -90,6 +103,12 @@ class sp02{
                 values.push(filters.tinh_trang_ho_hap);
             }
 
+            // Thêm filter cho muc_do
+            if (filters.muc_do) {
+                query += ' AND s.muc_do = ?';
+                values.push(filters.muc_do);
+            }
+
             query += ' ORDER BY s.thoi_gian_do DESC';
 
             if (filters.limit) {
@@ -104,6 +123,7 @@ class sp02{
             throw new Error('Không thể lấy dữ liệu SpO2 của bệnh nhân: ' + error.message);
         }
     }
+
     static async findLatestByBenhNhan(idBenhNhan) {
         try {
             const query = `
@@ -121,6 +141,7 @@ class sp02{
             throw new Error('Không thể lấy dữ liệu SpO2 gần nhất: ' + error.message);
         }
     }
+
     static async update(id, data) {
         try {
             const fields = [];
@@ -138,21 +159,21 @@ class sp02{
             }
 
             fields.push('ngay_cap_nhat = CURRENT_TIMESTAMP');
-            
+
             values.push(id);
 
             const query = `UPDATE spo2 SET ${fields.join(', ')} WHERE id = ?`;
-            
+
             // Đảm bảo không có undefined trong values
             const sanitizedValues = values.map(v => v === undefined ? null : v);
             const [result] = await connection.execute(query, sanitizedValues);
-            
+
             if (result.affectedRows === 0) {
                 return { success: false, message: 'Không tìm thấy bản ghi để cập nhật' };
             }
 
             const updatedRecord = await this.findById(id);
-            
+
             return {
                 success: true,
                 message: 'Cập nhật dữ liệu SpO2 thành công',
@@ -163,11 +184,12 @@ class sp02{
             throw new Error('Không thể cập nhật dữ liệu SpO2: ' + error.message);
         }
     }
+
     static async delete(id) {
         try {
             const query = 'DELETE FROM spo2 WHERE id = ?';
             const [result] = await connection.execute(query, [id]);
-            
+
             if (result.affectedRows === 0) {
                 return { success: false, message: 'Không tìm thấy bản ghi để xóa' };
             }
@@ -182,6 +204,7 @@ class sp02{
             throw new Error('Không thể xóa dữ liệu SpO2: ' + error.message);
         }
     }
+
     static evaluateSpO2(spo2Value, hasRespiratorySymptoms = false) {
         let danhGia = 'binh_thuong';
         let mucDo = 'binh_thuong';
@@ -225,12 +248,13 @@ class sp02{
             noiDungCanhBao = 'Có triệu chứng hô hấp kèm SpO2 thấp - Cần đánh giá khẩn cấp';
         }
 
-        return { 
-            danh_gia: danhGia, 
-            muc_do: mucDo, 
+        return {
+            danh_gia_chi_tiet: danhGia,
+            muc_do: mucDo,
             noi_dung_canh_bao: noiDungCanhBao,
             tinh_trang_ho_hap: tinh_trang_ho_hap
         };
     }
 }
-module.exports=sp02;
+
+module.exports = sp02;

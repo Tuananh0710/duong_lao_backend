@@ -181,6 +181,63 @@ class lichChung {
             throw error;
         }
     }
+    static async getLichChungGanNhat(idBenhNhan, limit = 3) {
+        try {
+            if (!idBenhNhan) {
+                throw new Error('Thiếu tham số cần thiết: idBenhNhan');
+            }
+
+            const query = `
+                (SELECT 
+                    id,
+                    tieu_de AS ten,
+                    mo_ta AS ghi_chu,
+                    ngay AS thoi_gian,
+                    dia_diem,
+                    'su_kien' AS loai,
+                    ngay_tao,
+                    ngay_cap_nhat,
+                    ABS(DATEDIFF(ngay, CURDATE())) AS khoang_cach
+                FROM su_kien 
+                WHERE da_xoa != 1 
+                    AND ngay >= CURDATE())
+                
+                UNION ALL
+                
+                (SELECT 
+                    id,
+                    CONCAT('Khám: ', loai_kham) AS ten,
+                    bac_si AS ghi_chu,
+                    thoi_gian,
+                    NULL AS dia_diem,
+                    'lich_kham' AS loai,
+                    ngay_tao,
+                    ngay_cap_nhat,
+                    ABS(DATEDIFF(thoi_gian, CURDATE())) AS khoang_cach
+                FROM lich_kham
+                WHERE id_benh_nhan = ? 
+                    AND trang_thai = 'cho_kham' 
+                    AND thoi_gian >= CURDATE())
+                
+                ORDER BY khoang_cach ASC, thoi_gian ASC
+                LIMIT ?
+            `;
+
+            const [rows] = await connection.execute(query, [idBenhNhan, limit]);
+            
+            // Xóa trường khoang_cach nếu không cần thiết trả về frontend
+            const cleanedRows = rows.map(row => {
+                const { khoang_cach, ...rest } = row;
+                return rest;
+            });
+            
+            return cleanedRows;
+
+        } catch (error) {
+            console.error('Lỗi khi lấy lịch chung gần nhất:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = lichChung;
