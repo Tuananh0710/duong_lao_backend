@@ -74,7 +74,7 @@ LIMIT 1
                 ltb.id_nguoi_than
             FROM lich_tham_benh ltb
             WHERE ltb.id_benh_nhan=? AND ltb.id_nguoi_than=? AND ltb.trang_thai = 'da_duyet' AND ltb.ngay >= CURDATE()
-            ORDER BY ltb.ngay DESC
+            ORDER BY ltb.ngay ASC
             LIMIT 1
             `
             if(!id_benh_nhan || !id_nguoi_than){
