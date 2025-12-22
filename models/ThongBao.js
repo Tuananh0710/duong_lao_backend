@@ -37,5 +37,60 @@ class ThongBao{
             throw error;
         }
     }
+    static async create(notificationData) {
+    try {
+      const {
+        id_nguoi_nhan,
+        loai = 'cong_viec',
+        tieu_de,
+        noi_dung,
+        link = null,
+        da_doc = 0
+      } = notificationData;
+      
+      const [result] = await db.query(
+        `INSERT INTO thong_bao 
+        (id_nguoi_nhan, loai, tieu_de, noi_dung, link, da_doc) 
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [id_nguoi_nhan, loai, tieu_de, noi_dung, link, da_doc]
+      );
+      
+      return { id: result.insertId };
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      throw error;
+    }
+  }
+  
+  // Đánh dấu đã đọc
+  static async markAsRead(notificationId, userId) {
+    try {
+      await db.query(
+        'UPDATE thong_bao SET da_doc = 1 WHERE id = ? AND id_nguoi_nhan = ?',
+        [notificationId, userId]
+      );
+      return { success: true };
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+  
+  // Lấy thông báo của user
+  static async getByUser(userId, limit = 20) {
+    try {
+      const [notifications] = await db.query(`
+        SELECT * FROM thong_bao 
+        WHERE id_nguoi_nhan = ? 
+        ORDER BY ngay_tao DESC 
+        LIMIT ?
+      `, [userId, limit]);
+      
+      return notifications;
+    } catch (error) {
+      console.error('Error getting notifications:', error);
+      throw error;
+    }
+  }
 }
 module.exports = ThongBao;

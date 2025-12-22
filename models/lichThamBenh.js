@@ -87,5 +87,118 @@ LIMIT 1
             throw new Error('Không thể lấy dữ liệu lịch hẹn gần nhất: ' + error.message);
         }
     }
+    static async create(visitData) {
+    try {
+      const {
+        id_benh_nhan,
+        id_nguoi_than,
+        ngay,
+        khung_gio,
+        loai = 'gap_mat',
+        so_nguoi_di_cung = 1,
+        ghi_chu = '',
+        trang_thai = 'cho_duyet'
+      } = visitData;
+      
+      const [result] = await connection.query(
+        `INSERT INTO lich_tham_benh 
+        (id_benh_nhan, id_nguoi_than, ngay, khung_gio, loai, so_nguoi_di_cung, ghi_chu, trang_thai) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id_benh_nhan, id_nguoi_than, ngay, khung_gio, loai, so_nguoi_di_cung, ghi_chu, trang_thai]
+      );
+      
+      return {
+        id: result.insertId,
+        ...visitData
+      };
+    } catch (error) {
+      console.error('Error creating visit:', error);
+      throw error;
+    }
+  }
+  
+  // Lấy chi tiết lịch thăm
+  static async findById(visitId) {
+    try {
+      const [visits] = await connection.query(`
+        SELECT lt.*, 
+               bn.ho_ten AS ten_benh_nhan,
+               bn.phong,
+               ntb.ho_ten AS ten_nguoi_than,
+               ntb.so_dien_thoai AS sdt_nguoi_than,
+               ntb.id_tai_khoan AS id_tai_khoan_nguoi_nha
+        FROM lich_tham_benh lt
+        JOIN benh_nhan bn ON lt.id_benh_nhan = bn.id
+        LEFT JOIN nguoi_than_benh_nhan ntb ON lt.id_nguoi_than = ntb.id
+        WHERE lt.id = ?
+      `, [visitId]);
+      
+      return visits[0] || null;
+    } catch (error) {
+      console.error('Error finding visit:', error);
+      throw error;
+    }
+  }
+  
+  // Cập nhật trạng thái lịch thăm
+  static async updateStatus(visitId, status, reason = null) {
+    try {
+      await connection.query(
+        `UPDATE lich_tham_benh 
+        SET trang_thai = ?, 
+            ghi_chu = CONCAT(IFNULL(ghi_chu, ''), IFNULL(CONCAT('\nLý do: ', ?), ''))
+        WHERE id = ?`,
+        [status, reason, visitId]
+      );
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating visit status:', error);
+      throw error;
+    }
+  }
+  
+  // Lấy danh sách lịch thăm của người nhà
+  static async getByFamilyMember(familyMemberId) {
+    try {
+      const [visits] = await connection.query(`
+        SELECT lt.*, bn.ho_ten AS ten_benh_nhan, bn.phong
+        FROM lich_tham_benh lt
+        JOIN benh_nhan bn ON lt.id_benh_nhan = bn.id
+        WHERE lt.id_nguoi_than = ?
+        ORDER BY lt.ngay DESC, lt.khung_gio DESC
+      `, [familyMemberId]);
+      
+      return visits;
+    } catch (error) {
+      console.error('Error getting visits by family:', error);
+      throw error;
+    }
+  }
+  
+  // Lấy danh sách lịch thăm cần duyệt của điều dưỡng
+  static async getPendingForNurse(nurseId) {
+    try {
+      const [visits] = await connection.query(`
+        SELECT lt.*, bn.ho_ten AS ten_benh_nhan, bn.phong,
+               ntb.ho_ten AS ten_nguoi_than, ntb.so_dien_thoai
+        FROM lich_tham_benh lt
+        JOIN benh_nhan bn ON lt.id_benh_nhan = bn.id
+        JOIN nguoi_than_benh_nhan ntb ON lt.id_nguoi_than = ntb.id
+        JOIN dieu_duong_benh_nhan ddbn ON bn.id = ddbn.id_benh_nhan
+        JOIN ho_so_nhan_vien hsnv ON ddbn.id_dieu_duong = hsnv.id
+        WHERE hsnv.id_tai_khoan = ? 
+          AND ddbn.trang_thai = 'dang_quan_ly'
+          AND lt.trang_thai = 'cho_duyet'
+        ORDER BY lt.ngay ASC, lt.khung_gio ASC
+      `, [nurseId]);
+      
+      return visits;
+    } catch (error) {
+      console.error('Error getting pending visits:', error);
+      throw error;
+    }
+  }
+
 }
 module.exports = lichThamBenh;

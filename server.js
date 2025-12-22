@@ -22,6 +22,7 @@ const lichKhamRoutes= require('./routes/lichKhamRoutes');
 const doDungCaNhanRoutes= require('./routes/doDungCaNhanRoutes');
 const suKienRoutes= require('./routes/suKienRoutes');
 const lichChungRoutes=require('./routes/lichChungRoutes');
+const notificationRoutes=require("./routes/notifiactionRoutes");
 
 const {errorHandler,notFound}= require('./middlewares/errorHandler');
 const { timeStamp } = require('console');
@@ -70,6 +71,7 @@ app.use('/api/lich_kham/',lichKhamRoutes);
 app.use('/api/do_dung_ca_nhan/',doDungCaNhanRoutes);
 app.use('/api/su_kien',suKienRoutes);
 app.use('/api/lich_chung',lichChungRoutes);
+app.use('/api/notification',notificationRoutes);
 app.get('/', (req, res) => {
   res.json({
     message: 'Chào mừng đến với API hệ thống Dưỡng Lão',
