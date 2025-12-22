@@ -22,6 +22,7 @@ const lichKhamRoutes= require('./routes/lichKhamRoutes');
 const doDungCaNhanRoutes= require('./routes/doDungCaNhanRoutes');
 const suKienRoutes= require('./routes/suKienRoutes');
 const lichChungRoutes=require('./routes/lichChungRoutes');
+const nhanVienRoutes = require('./routes/nhanVienRoutes');
 
 const {errorHandler,notFound}= require('./middlewares/errorHandler');
 const { timeStamp } = require('console');
@@ -69,6 +70,7 @@ app.use('/api/sp02/',sp02Routes);
 app.use('/api/lich_kham/',lichKhamRoutes);
 app.use('/api/do_dung_ca_nhan/',doDungCaNhanRoutes);
 app.use('/api/su_kien',suKienRoutes);
+app.use('/api/nhan_vien',nhanVienRoutes);
 app.use('/api/lich_chung',lichChungRoutes);
 app.get('/', (req, res) => {
   res.json({
