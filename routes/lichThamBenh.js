@@ -19,5 +19,6 @@ router.put('/:id/status', authenticate, VisitController.updateVisitStatus);
 
 router.get('/', authenticate, VisitController.getVisits);
 
+router.post('/themlich',lichThamBenhController.themLichThamMoiTheoBenhNhan )
 
 module.exports = router;

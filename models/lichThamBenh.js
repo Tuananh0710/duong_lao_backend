@@ -40,8 +40,8 @@ class lichThamBenh {
     }
 
     static async getTongSoLichHen(idDieuDuong) {
-    try {
-        const query = `
+        try {
+            const query = `
             SELECT 
     COUNT(*) AS tong_so
 FROM lich_tham_benh ltb
@@ -57,16 +57,16 @@ ORDER BY ngay DESC
 LIMIT 1
         `;
 
-        const [result] = await connection.query(query, [idDieuDuong]);
-        return result[0] ? result[0].tong_so : 0;
-    } catch (error) {
-        console.error('Lỗi khi lấy thống kê lịch thăm bệnh:', error);
-        throw error;
+            const [result] = await connection.query(query, [idDieuDuong]);
+            return result[0] ? result[0].tong_so : 0;
+        } catch (error) {
+            console.error('Lỗi khi lấy thống kê lịch thăm bệnh:', error);
+            throw error;
+        }
     }
-}
-    static async getLichLastestByNguoiThanBenhNhan(id_nguoi_than,id_benh_nhan){
+    static async getLichLastestByNguoiThanBenhNhan(id_nguoi_than, id_benh_nhan) {
         try {
-            const query=`
+            const query = `
             SELECT 
                 ltb.ngay,
                 ltb.khung_gio,
@@ -77,11 +77,11 @@ LIMIT 1
             ORDER BY ltb.ngay ASC
             LIMIT 1
             `
-            if(!id_benh_nhan || !id_nguoi_than){
+            if (!id_benh_nhan || !id_nguoi_than) {
                 throw new Error('thieu tham so can thiet !');
             }
-            const [rows]= await connection.execute(query,[id_benh_nhan,id_nguoi_than]);
-            return rows[0] || null
+            const [rows] = await connection.execute(query, [id_benh_nhan, id_nguoi_than]);
+            return rows[0] || null  
         } catch (error) {
             console.error('Lỗi khi lấy dữ liệu lịch hẹn gần nhất:', error);
             throw new Error('Không thể lấy dữ liệu lịch hẹn gần nhất: ' + error.message);
@@ -199,6 +199,59 @@ LIMIT 1
       throw error;
     }
   }
+static async themLichThamMoi(
+    id_nguoi_than,
+    id_benh_nhan,
+    ngay,
+    khung_gio,
+    loai,
+    so_nguoi_di_cung,
+    ghi_chu,
+    trang_thai
+) {
+    try {
+        const query = `
+            INSERT INTO lich_tham_benh
+            (
+                id_nguoi_than,
+                id_benh_nhan,
+                ngay,
+                khung_gio,
+                loai,
+                so_nguoi_di_cung,
+                ghi_chu,
+                trang_thai,
+                ngay_tao,
+                ngay_cap_nhat
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+
+        const values = [
+            id_nguoi_than,
+            id_benh_nhan,
+            ngay,
+            khung_gio,
+            loai,
+            so_nguoi_di_cung,
+            ghi_chu,
+            trang_thai
+        ];
+
+        const [result] = await connection.execute(query, values);
+
+        return {
+            success: true,
+            insertId: result.insertId
+        };
+    } catch (error) {
+        console.error('Lỗi thêm lịch thăm:', error);
+        return {
+            success: false,
+            message: 'Thêm lịch thăm thất bại'
+        };
+    }
+}
 
 }
 module.exports = lichThamBenh;
