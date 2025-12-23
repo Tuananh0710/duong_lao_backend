@@ -61,6 +61,25 @@ class TaiKhoan {
     const [rows] = await db.execute(query);
     return rows[0].total;
   }
+
+  static async getThongTinTaiKhoanByNguoiThan(id_tai_khoan){
+    try {
+      const query=
+      `
+        SELECT 
+            tk.*,
+            ntbn.id AS id_nguoi_nha
+         FROM tai_khoan tk
+         LEFT JOIN nguoi_than_benh_nhan ntbn ON ntbn.id_tai_khoan= tk.id
+         WHERE tk.id= ?
+      `
+      const [rows]= await db.execute(query,[id_tai_khoan]);
+      return rows[0] || null
+    } catch (error) {
+      console.error('lỗi khi lấy thông tin tk:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = TaiKhoan;
