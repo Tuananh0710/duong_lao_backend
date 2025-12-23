@@ -21,7 +21,8 @@ class lichChung {
                     dia_diem,
                     'su_kien' AS loai,
                     ngay_tao,
-                    ngay_cap_nhat
+                    ngay_cap_nhat,
+                    trang_thai
                 FROM su_kien 
                 WHERE da_xoa != 1 
                     AND ngay >= CURDATE()
@@ -37,7 +38,8 @@ class lichChung {
                     NULL AS dia_diem,
                     'lich_kham' AS loai,
                     ngay_tao,
-                    ngay_cap_nhat
+                    ngay_cap_nhat,
+                    trang_thai
                 FROM lich_kham
                 WHERE id_benh_nhan = ? 
                     AND trang_thai = 'cho_kham' 
