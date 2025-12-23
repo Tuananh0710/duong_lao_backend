@@ -226,7 +226,7 @@ class lichChung {
             LIMIT ?
         `;
 
-        const [rows] = await connection.execute(query, [idBenhNhan, limit]);
+        const [rows] = await connection.execute(query, [idBenhNhan, limit.toString()]);
         
         // Xóa trường khoang_cach nếu không cần thiết trả về frontend
         const cleanedRows = rows.map(row => {
