@@ -196,7 +196,7 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
         const countParams = [idNguoiThan];
 
         // Thêm điều kiện tìm kiếm nếu có
-        if (search) {
+        if (search && search.trim() !== '') {
             const searchCondition = `
                 AND (
                     bn.ho_ten LIKE ? OR 
@@ -214,7 +214,7 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
             countParams.push(searchParam, searchParam, searchParam, searchParam);
         }
 
-        // Thêm phân trang
+        // Thêm phân trang (luôn thêm vào cuối)
         query += ` ORDER BY bn.ngay_tao DESC LIMIT ? OFFSET ?`;
         queryParams.push(limit, offset);
 
