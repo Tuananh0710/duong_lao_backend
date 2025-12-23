@@ -39,24 +39,24 @@ class NhanVienController {
 
     static async layChiTietNhanVien(req, res) {
         try {
-            const { idDieuDuong } = req.params;
+            const { idNhanVien } = req.params;
 
             // Validate
-            if (!idDieuDuong) {
+            if (!idNhanVien) {
                 return res.status(400).json({
                     success: false,
                     message: 'Vui lòng cung cấp id điều dưỡng'
                 });
             }
 
-            if (isNaN(idDieuDuong)) {
+            if (isNaN(idNhanVien)) {
                 return res.status(400).json({
                     success: false,
                     message: 'id điều dưỡng không hợp lệ'
                 });
             }
 
-            const nhan_vien = await NhanVien.layChiTietNhanVien(idDieuDuong);
+            const nhan_vien = await NhanVien.layChiTietNhanVien(idNhanVien);
 
             if (!nhan_vien) {
                 return res.status(404).json({

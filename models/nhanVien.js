@@ -9,6 +9,7 @@ class NhanVien {
                     hsnv.chuyen_mon,
                     hsnv.so_nam_kinh_nghiem,
                     hsnv.avatar,
+                    hsnv.id AS id_dieu_duong,
                     hsnv.chuc_vu,
                     tk.so_dien_thoai
                 FROM dieu_duong_benh_nhan ddbn
@@ -34,7 +35,6 @@ class NhanVien {
             const query = `
                 SELECT 
                     ddbn.trang_thai,
-
                     hsnv.id AS id_dieu_duong,
                     hsnv.chuc_vu,
                     hsnv.chuyen_mon,
