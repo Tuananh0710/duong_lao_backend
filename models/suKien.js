@@ -33,7 +33,6 @@ class suKien{
             id,
             tieu_de,
             mo_ta,
-            ngay,
             dia_diem,
             anh_dai_dien,
             trang_thai,
