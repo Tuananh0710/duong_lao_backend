@@ -14,6 +14,11 @@ class NotificationController {
       const userId = user.id_tai_khoan;
       
       const { token, device_type = 'android', app_type } = req.body;
+      console.log('🎯 Received FCM token from user:', userId);
+      console.log('   Token:', token?.substring(0, 20) + '...');
+      console.log('   Device type:', device_type);
+      console.log('   App type:', app_type);
+      console.log('   User role:', req.user.vai_tro);
       
       if (!token) {
         return res.status(400).json({

@@ -48,7 +48,7 @@ class ThongBao{
         da_doc = 0
       } = notificationData;
       
-      const [result] = await db.query(
+      const [result] = await connection.query(
         `INSERT INTO thong_bao 
         (id_nguoi_nhan, loai, tieu_de, noi_dung, link, da_doc) 
         VALUES (?, ?, ?, ?, ?, ?)`,
@@ -65,7 +65,7 @@ class ThongBao{
   // Đánh dấu đã đọc
   static async markAsRead(notificationId, userId) {
     try {
-      await db.query(
+      await connection.query(
         'UPDATE thong_bao SET da_doc = 1 WHERE id = ? AND id_nguoi_nhan = ?',
         [notificationId, userId]
       );
@@ -79,7 +79,7 @@ class ThongBao{
   // Lấy thông báo của user
   static async getByUser(userId, limit = 20) {
     try {
-      const [notifications] = await db.query(`
+      const [notifications] = await connection.query(`
         SELECT * FROM thong_bao 
         WHERE id_nguoi_nhan = ? 
         ORDER BY ngay_tao DESC 

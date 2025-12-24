@@ -116,20 +116,20 @@ class BenhNhan{
         }
     }
 
-    static async getThongTinChiTietBenhNhan(id) {
+   static async getThongTinChiTietBenhNhan(id) {
     try {
         const [rows] = await connection.query(
             `
             SELECT
                 bn.id,
                 bn.ho_ten,
-                DATE(bn.ngay_sinh) as ngay_sinh, -- CHỈ LẤY PHẦN NGÀY
+                DATE(bn.ngay_sinh) as ngay_sinh,
                 bn.gioi_tinh,
                 bn.cccd,
                 bn.nhom_mau,
                 bn.phong,
                 bn.anh_dai_dien,
-                DATE(bn.ngay_nhap_vien) as ngay_nhap_vien, -- CHỈ LẤY PHẦN NGÀY
+                DATE(bn.ngay_nhap_vien) as ngay_nhap_vien,
                 bn.tinh_trang_hien_tai,
                 bn.kha_nang_sinh_hoat,
                 hs.tien_su_benh,
@@ -137,16 +137,25 @@ class BenhNhan{
                 hs.lich_su_phau_thuat,
                 nt.ho_ten as nguoi_than_ho_ten,
                 nt.moi_quan_he as nguoi_than_moi_quan_he,
-                nt.so_dien_thoai as nguoi_than_so_dien_thoai
+                nt.so_dien_thoai as nguoi_than_so_dien_thoai,
+                -- Lấy tên dịch vụ
+                GROUP_CONCAT(DISTINCT dv.ten_dich_vu SEPARATOR ', ') as ten_dich_vu
             FROM benh_nhan bn
             LEFT JOIN ho_so_y_te_benh_nhan hs ON hs.id_benh_nhan = bn.id
             LEFT JOIN nguoi_than_benh_nhan nt ON nt.id_benh_nhan = bn.id 
                 AND nt.la_nguoi_lien_he_chinh = 1
             LEFT JOIN dieu_duong_benh_nhan ddbn ON ddbn.id_benh_nhan = bn.id 
                 AND ddbn.trang_thai = 'dang_quan_ly'
+            LEFT JOIN benh_nhan_dich_vu bndv ON bndv.id_benh_nhan = bn.id
+                AND bndv.trang_thai = 'dang_su_dung'
+            LEFT JOIN dich_vu dv ON dv.id = bndv.id_dich_vu
+                AND dv.da_xoa = 0
             WHERE bn.id = ? AND bn.da_xoa = 0
+            GROUP BY bn.id
             `, [id]);
+        
         return rows.length > 0 ? rows[0] : null;
+        
     } catch (error) {
         throw error;
     }

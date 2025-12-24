@@ -118,27 +118,40 @@ LIMIT 1
   }
   
   // Lấy chi tiết lịch thăm
-  static async findById(visitId) {
+static async findById(visitId) {
     try {
-      const [visits] = await connection.query(`
-        SELECT lt.*, 
-               bn.ho_ten AS ten_benh_nhan,
-               bn.phong,
-               ntb.ho_ten AS ten_nguoi_than,
-               ntb.so_dien_thoai AS sdt_nguoi_than,
-               ntb.id_tai_khoan AS id_tai_khoan_nguoi_nha
-        FROM lich_tham_benh lt
-        JOIN benh_nhan bn ON lt.id_benh_nhan = bn.id
-        LEFT JOIN nguoi_than_benh_nhan ntb ON lt.id_nguoi_than = ntb.id
-        WHERE lt.id = ?
-      `, [visitId]);
-      
-      return visits[0] || null;
+        const [visits] = await connection.query(`
+            SELECT lt.*, 
+                   bn.ho_ten AS ten_benh_nhan,
+                   bn.phong,
+                   ntb.ho_ten AS ten_nguoi_than,
+                   ntb.so_dien_thoai AS sdt_nguoi_than,
+                   ntb.id_tai_khoan AS id_tai_khoan_nguoi_nha,
+                   tk.email AS email_nguoi_nha  -- Thêm nếu cần
+            FROM lich_tham_benh lt
+            JOIN benh_nhan bn ON lt.id_benh_nhan = bn.id
+            LEFT JOIN nguoi_than_benh_nhan ntb ON lt.id_nguoi_than = ntb.id
+            LEFT JOIN tai_khoan tk ON ntb.id_tai_khoan = tk.id  -- Thêm join này
+            WHERE lt.id = ?
+        `, [visitId]);
+        
+        const visit = visits[0] || null;
+        
+        // Debug log để kiểm tra
+        console.log('Visit found:', {
+            id: visit?.id,
+            id_nguoi_than: visit?.id_nguoi_than,
+            ten_nguoi_than: visit?.ten_nguoi_than, 
+            id_tai_khoan_nguoi_nha: visit?.id_tai_khoan_nguoi_nha
+        });
+        
+        return visit;
+        
     } catch (error) {
-      console.error('Error finding visit:', error);
-      throw error;
+        console.error('Error finding visit:', error);
+        throw error;
     }
-  }
+}
   
   // Cập nhật trạng thái lịch thăm
   static async updateStatus(visitId, status, reason = null) {

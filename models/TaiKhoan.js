@@ -67,7 +67,13 @@ class TaiKhoan {
       const query=
       `
         SELECT 
-            tk.*,
+            tk.id,
+            tk.ho_ten,
+            tk.so_dien_thoai,
+            tk.email,
+            tk.vai_tro,
+            tk.avatar,
+            tk.trang_thai,
             ntbn.id AS id_nguoi_nha
          FROM tai_khoan tk
          LEFT JOIN nguoi_than_benh_nhan ntbn ON ntbn.id_tai_khoan= tk.id
