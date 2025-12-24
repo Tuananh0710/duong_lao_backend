@@ -136,8 +136,9 @@ class BenhNhan{
                 hs.di_ung_thuoc,
                 hs.lich_su_phau_thuat,
                 nt.ho_ten as nguoi_than_ho_ten,
-                nt.moi_quan_he as nguoi_than_moi_quan_he,
-                nt.so_dien_thoai as nguoi_than_so_dien_thoai,
+                nt.moi_quan_he as moi_quan_he,
+                nt.so_dien_thoai as sdt_nguoi_than,
+               
                 -- Lấy tên dịch vụ
                 GROUP_CONCAT(DISTINCT dv.ten_dich_vu SEPARATOR ', ') as ten_dich_vu
             FROM benh_nhan bn
