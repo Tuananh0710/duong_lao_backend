@@ -66,18 +66,7 @@ class TaiKhoan {
     try {
       const query=
       `
-        SELECT 
-            tk.id,
-            tk.ho_ten,
-            tk.so_dien_thoai,
-            tk.email,
-            tk.vai_tro,
-            tk.avatar,
-            tk.trang_thai,
-            ntbn.id AS id_nguoi_nha
-         FROM tai_khoan tk
-         LEFT JOIN nguoi_than_benh_nhan ntbn ON ntbn.id_tai_khoan= tk.id
-         WHERE tk.id= ?
+       SELECT tk.ho_ten, tk.so_dien_thoai, tk.id, tk.email, tk.avatar, tk.vai_tro, tk.trang_thai, tk.ngay_tao, tk.ngay_xoa, tk.ngay_cap_nhat FROM tai_khoan tk WHERE tk.id= ?
       `
       const [rows]= await db.execute(query,[id_tai_khoan]);
       return rows[0] || null

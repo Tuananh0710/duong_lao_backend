@@ -30,7 +30,6 @@ class VisitController {
       res.status(201).json({
         success: true,
         message: 'Đặt lịch thành công! Điều dưỡng sẽ xác nhận sớm.',
-        data: newVisit
       });
       
     } catch (error) {

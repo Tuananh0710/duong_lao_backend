@@ -195,7 +195,6 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
         const queryParams = [idNguoiThan];
         const countParams = [idNguoiThan];
 
-        // Thêm điều kiện tìm kiếm nếu có
         if (search && search.trim() !== '') {
             const searchCondition = `
                 AND (
@@ -215,11 +214,13 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
         }
 
         // Thêm phân trang (luôn thêm vào cuối)
-        query += ` ORDER BY bn.ngay_tao DESC LIMIT ? OFFSET ?`;
-        queryParams.push(limit, offset);
+        query += `
+            ORDER BY bn.ngay_tao DESC
+            LIMIT ${limit} OFFSET ${offset}
+            `;
 
         // Thực thi queries
-        const [rows] = await connection.execute(query, queryParams);
+        const [rows] = await connection.execute(query, [idNguoiThan]);
         const [countRows] = await connection.execute(countQuery, countParams);
         
         const total = countRows[0]?.total || 0;

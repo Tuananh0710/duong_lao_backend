@@ -98,6 +98,7 @@ class lichThamBenhController {
                 id_nguoi_than: lichGanNhat.id_nguoi_than,
                 ngay_tham: lichGanNhat.ngay,
                 khung_gio: lichGanNhat.khung_gio,
+                loai : lichGanNhat.loai,
             };
 
             return res.status(200).json({
