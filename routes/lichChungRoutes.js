@@ -10,4 +10,6 @@ router.get('/:id_benh_nhan/phan-trang', lichChungController.getLichChungPhanTran
 
 router.get('/:id_benh_nhan/gan-nhat', lichChungController.getLichChungGanNhat);
 
+router.get('/:id_benh_nhan/trong-tuan',lichChungController.getLichChungTrongTuan);
+
 module.exports = router;
