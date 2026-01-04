@@ -13,7 +13,7 @@ const connection = mysql.createPool({
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
-  dateStrings: true, // <-- THÊM DÒNG NÀY
+  dateStrings: true,
   timezone: '+07:00' 
 });
 

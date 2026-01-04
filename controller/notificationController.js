@@ -39,7 +39,7 @@ class NotificationController {
       // VALIDATION: Kiểm tra role vs app_type
       if (app_type === 'nurse_app') {
         // Chỉ các role điều dưỡng, quản lý được dùng nurse_app
-        const allowedRoles = ['super_admin', 'quan_ly_y_te', 'quan_ly_nhan_su', 'dieu_duong', 'dieu_duong_truong', 'marketing'];
+        const allowedRoles = ['super_admin', 'quan_ly_y_te', 'quan_ly_nhan_su', 'dieu_duong', 'dieu_duong_truong', 'marketing'];``
         if (!allowedRoles.includes(user.vai_tro)) {
           return res.status(400).json({
             success: false,
