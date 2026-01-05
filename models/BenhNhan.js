@@ -24,104 +24,101 @@ class BenhNhan{
     }
 
     static async getDsBenhNhan(page = 1, limit = 10, search = '', idDieuDuong) {
-        try {
-            // Kiểm tra bắt buộc có idDieuDuong
-            if (!idDieuDuong) {
-                throw new Error('Thiếu tham số idDieuDuong');
-            }
-            
-            // Validate input
-            page = Math.max(1, parseInt(page) || 1);
-            limit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
-            search = typeof search === 'string' ? search.trim() : '';
-            
-            const offset = (page - 1) * limit;
-            
-            // 1. Build main query for data
-            let query = `
-                SELECT 
-                    bn.id,
-                    bn.ho_ten,
-                    bn.ngay_sinh,
-                    bn.gioi_tinh,
-                    bn.phong,
-                    bn.tinh_trang_hien_tai,
-                    bn.kha_nang_sinh_hoat
-                FROM benh_nhan bn
-                INNER JOIN dieu_duong_benh_nhan ddbn ON ddbn.id_benh_nhan = bn.id 
-                    AND ddbn.id_dieu_duong = ?
-                    AND ddbn.trang_thai = 'dang_quan_ly'
-                WHERE bn.da_xoa = 0
-            `;
-            const params = [idDieuDuong];
-            
-            // Tìm kiếm
-            if (search) {
-                query += ' AND (bn.ho_ten LIKE ? OR bn.phong LIKE ?)';
-                const searchTerm = `%${search}%`;
-                params.push(searchTerm, searchTerm);
-            }
-            
-            query += ` ORDER BY bn.ngay_nhap_vien DESC LIMIT ? OFFSET ?`;
-            params.push(limit, offset);
-            
-            console.log('Data Query:', query);
-            console.log('Data Params:', params);
-            
-            const [rows] = await connection.query(query, params);
-            
-            let countQuery = `
-                SELECT COUNT(DISTINCT bn.id) as tong_so
-                FROM benh_nhan bn
-                INNER JOIN dieu_duong_benh_nhan ddbn ON ddbn.id_benh_nhan = bn.id 
-                    AND ddbn.id_dieu_duong = ?
-                    AND ddbn.trang_thai = 'dang_quan_ly'
-                WHERE bn.da_xoa = 0
-            `;
-            const countParams = [idDieuDuong];
-            
-            // Tìm kiếm
-            if (search) {
-                countQuery += ' AND (bn.ho_ten LIKE ? OR bn.phong LIKE ?)';
-                const searchTerm = `%${search}%`;
-                countParams.push(searchTerm, searchTerm);
-            }
-            
-            console.log('Count Query:', countQuery);
-            console.log('Count Params:', countParams);
-            
-            const [countRows] = await connection.query(countQuery, countParams);
-            const total = countRows[0].tong_so;
-            const totalPages = Math.ceil(total / limit);
-            
-            console.log('Result:', {
-                rowsCount: rows.length,
-                total: total,
-                page: page,
-                limit: limit,
-                idDieuDuong: idDieuDuong
-            });
-            
-            return {
-                data: rows,
-                total:total,
-                page:page,
-                limit:limit,
-                totalPages:totalPages
-            };
-            
-        } catch (error) {
-            console.error('Error in getDsBenhNhan model:', error);
-            throw error;
+    try {
+        if (!idDieuDuong) {
+            throw new Error('Thiếu tham số idDieuDuong');
         }
+        
+        page = Math.max(1, parseInt(page) || 1);
+        limit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
+        search = typeof search === 'string' ? search.trim() : '';
+        
+        const offset = (page - 1) * limit;
+        
+        let query = `
+            SELECT 
+                bn.id,
+                bn.ho_ten,
+                bn.ngay_sinh,
+                bn.gioi_tinh,
+                CONCAT(pk.ten_khu, '-', p.so_phong) as phong,
+                bn.tinh_trang_hien_tai,
+                bn.kha_nang_sinh_hoat
+            FROM benh_nhan bn
+            INNER JOIN dieu_duong_benh_nhan ddbn ON ddbn.id_benh_nhan = bn.id 
+                AND ddbn.id_dieu_duong = ?
+                AND ddbn.trang_thai = 'dang_quan_ly'
+            LEFT JOIN phong_o_benh_nhan pobn ON pobn.id_benh_nhan = bn.id 
+                AND (pobn.ngay_ket_thuc_o IS NULL OR pobn.ngay_ket_thuc_o > CURDATE())
+            LEFT JOIN phong p ON p.id = pobn.id_phong AND p.da_xoa = 0
+            LEFT JOIN phan_khu pk ON pk.id = p.id_phan_khu AND pk.da_xoa = 0
+            WHERE bn.da_xoa = 0
+        `;
+        const params = [idDieuDuong];
+        
+        if (search) {
+            query += ' AND (bn.ho_ten LIKE ? OR CONCAT(pk.ten_khu, \'-\', p.so_phong) LIKE ?)';
+            const searchTerm = `%${search}%`;
+            params.push(searchTerm, searchTerm);
+        }
+        
+        query += ` ORDER BY bn.ngay_nhap_vien DESC LIMIT ? OFFSET ?`;
+        params.push(limit, offset);
+        
+        const [rows] = await connection.query(query, params);
+        
+        let countQuery = `
+            SELECT COUNT(DISTINCT bn.id) as tong_so
+            FROM benh_nhan bn
+            INNER JOIN dieu_duong_benh_nhan ddbn ON ddbn.id_benh_nhan = bn.id 
+                AND ddbn.id_dieu_duong = ?
+                AND ddbn.trang_thai = 'dang_quan_ly'
+            WHERE bn.da_xoa = 0
+        `;
+        const countParams = [idDieuDuong];
+        
+        if (search) {
+            countQuery += ' AND bn.ho_ten LIKE ?';
+            const searchTerm = `%${search}%`;
+            countParams.push(searchTerm);
+        }
+        
+        const [countRows] = await connection.query(countQuery, countParams);
+        const total = countRows[0].tong_so;
+        const totalPages = Math.ceil(total / limit);
+        
+        return {
+            data: rows,
+            total: total,
+            page: page,
+            limit: limit,
+            totalPages: totalPages
+        };
+        
+    } catch (error) {
+        console.error('Error in getDsBenhNhan model:', error);
+        throw error;
     }
+}
 
    static async getThongTinChiTietBenhNhan(id) {
     try {
         const [rows] = await connection.query(
             `
             SELECT
-                bn.*,
+                bn.id,
+                bn.ho_ten,
+                bn.ngay_sinh,
+                bn.gioi_tinh,
+                bn.cccd,
+                bn.dia_chi,
+                bn.nhom_mau,
+                bn.bhyt,
+                CONCAT(pk.ten_khu, '-', p.so_phong) as phong,
+                bn.anh_dai_dien,
+                bn.ngay_nhap_vien,
+                bn.tinh_trang_hien_tai,
+                bn.kha_nang_sinh_hoat,
                 DATE(bn.ngay_sinh) as ngay_sinh,
                 DATE(bn.ngay_nhap_vien) as ngay_nhap_vien,
                 hs.tien_su_benh,
@@ -142,6 +139,10 @@ class BenhNhan{
             LEFT JOIN ho_so_y_te_benh_nhan hs ON hs.id_benh_nhan = bn.id
             LEFT JOIN nguoi_than_benh_nhan nt ON nt.id_benh_nhan = bn.id 
                 AND nt.la_nguoi_lien_he_chinh = 1
+            LEFT JOIN phong_o_benh_nhan pobn ON pobn.id_benh_nhan = bn.id 
+                AND (pobn.ngay_ket_thuc_o IS NULL OR pobn.ngay_ket_thuc_o > CURDATE())
+            LEFT JOIN phong p ON p.id = pobn.id_phong AND p.da_xoa = 0
+            LEFT JOIN phan_khu pk ON pk.id = p.id_phan_khu AND pk.da_xoa = 0
             WHERE bn.id = ? AND bn.da_xoa = 0
             `, [id]);
         
@@ -169,7 +170,7 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
                 bn.dia_chi,
                 bn.nhom_mau,
                 bn.bhyt,
-                bn.phong,
+                CONCAT(pk.ten_khu, '-', p.so_phong) as phong,
                 bn.anh_dai_dien,
                 bn.ngay_nhap_vien,
                 bn.tinh_trang_hien_tai,
@@ -182,6 +183,10 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
                 ntbn.email as email_nguoi_than
             FROM nguoi_than_benh_nhan ntbn
             INNER JOIN benh_nhan bn ON ntbn.id_benh_nhan = bn.id
+            LEFT JOIN phong_o_benh_nhan pobn ON pobn.id_benh_nhan = bn.id 
+                AND (pobn.ngay_ket_thuc_o IS NULL OR pobn.ngay_ket_thuc_o > CURDATE())
+            LEFT JOIN phong p ON p.id = pobn.id_phong AND p.da_xoa = 0
+            LEFT JOIN phan_khu pk ON pk.id = p.id_phan_khu AND pk.da_xoa = 0
             WHERE ntbn.id = ? AND bn.da_xoa = 0
         `;
 
@@ -213,14 +218,12 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
             countParams.push(searchParam, searchParam, searchParam, searchParam);
         }
 
-        // Thêm phân trang (luôn thêm vào cuối)
         query += `
             ORDER BY bn.ngay_tao DESC
             LIMIT ${limit} OFFSET ${offset}
-            `;
+        `;
 
-        // Thực thi queries
-        const [rows] = await connection.execute(query, [idNguoiThan]);
+        const [rows] = await connection.execute(query, queryParams);
         const [countRows] = await connection.execute(countQuery, countParams);
         
         const total = countRows[0]?.total || 0;
