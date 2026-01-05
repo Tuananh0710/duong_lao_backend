@@ -64,5 +64,26 @@ class thongBaoController{
             });
         }
     }
+    static async getByUser(req, res) {
+    try {
+        const id_tai_khoan = req.user.id_tai_khoan;
+        const limit = req.query.limit || 20; 
+        
+        const notifications = await ThongBao.getByUser(id_tai_khoan, limit);
+        
+        return res.status(200).json({
+            success: true,
+            notifications: notifications, 
+            count: notifications.length
+        });
+    } catch (error) {
+        console.error('Error getting user notifications:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi lấy thông báo của người dùng',
+            error: error.message
+        });
+    }
+}
 }
 module.exports= thongBaoController;

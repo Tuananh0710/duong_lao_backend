@@ -116,37 +116,37 @@ class BenhNhan{
         }
     }
 
-    static async getThongTinChiTietBenhNhan(id) {
+   static async getThongTinChiTietBenhNhan(id) {
     try {
         const [rows] = await connection.query(
             `
             SELECT
-                bn.id,
-                bn.ho_ten,
-                DATE(bn.ngay_sinh) as ngay_sinh, -- CHỈ LẤY PHẦN NGÀY
-                bn.gioi_tinh,
-                bn.cccd,
-                bn.nhom_mau,
-                bn.phong,
-                bn.anh_dai_dien,
-                DATE(bn.ngay_nhap_vien) as ngay_nhap_vien, -- CHỈ LẤY PHẦN NGÀY
-                bn.tinh_trang_hien_tai,
-                bn.kha_nang_sinh_hoat,
+                bn.*,
+                DATE(bn.ngay_sinh) as ngay_sinh,
+                DATE(bn.ngay_nhap_vien) as ngay_nhap_vien,
                 hs.tien_su_benh,
                 hs.di_ung_thuoc,
                 hs.lich_su_phau_thuat,
                 nt.ho_ten as nguoi_than_ho_ten,
-                nt.moi_quan_he as nguoi_than_moi_quan_he,
-                nt.so_dien_thoai as nguoi_than_so_dien_thoai
+                nt.moi_quan_he as moi_quan_he,
+                nt.so_dien_thoai as sdt_nguoi_than,
+                (
+                    SELECT GROUP_CONCAT(DISTINCT dv.ten_dich_vu SEPARATOR ', ')
+                    FROM benh_nhan_dich_vu bndv
+                    LEFT JOIN dich_vu dv ON dv.id = bndv.id_dich_vu
+                    WHERE bndv.id_benh_nhan = bn.id
+                        AND bndv.trang_thai = 'dang_su_dung'
+                        AND dv.da_xoa = 0
+                ) as ten_dich_vu
             FROM benh_nhan bn
             LEFT JOIN ho_so_y_te_benh_nhan hs ON hs.id_benh_nhan = bn.id
             LEFT JOIN nguoi_than_benh_nhan nt ON nt.id_benh_nhan = bn.id 
                 AND nt.la_nguoi_lien_he_chinh = 1
-            LEFT JOIN dieu_duong_benh_nhan ddbn ON ddbn.id_benh_nhan = bn.id 
-                AND ddbn.trang_thai = 'dang_quan_ly'
             WHERE bn.id = ? AND bn.da_xoa = 0
             `, [id]);
+        
         return rows.length > 0 ? rows[0] : null;
+        
     } catch (error) {
         throw error;
     }
@@ -195,8 +195,7 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
         const queryParams = [idNguoiThan];
         const countParams = [idNguoiThan];
 
-        // Thêm điều kiện tìm kiếm nếu có
-        if (search) {
+        if (search && search.trim() !== '') {
             const searchCondition = `
                 AND (
                     bn.ho_ten LIKE ? OR 
@@ -214,12 +213,14 @@ static async getDsBenhNhanByNguoiNha(idNguoiThan, page = 1, limit = 10, search =
             countParams.push(searchParam, searchParam, searchParam, searchParam);
         }
 
-        // Thêm phân trang
-        query += ` ORDER BY bn.ngay_tao DESC LIMIT ? OFFSET ?`;
-        queryParams.push(limit, offset);
+        // Thêm phân trang (luôn thêm vào cuối)
+        query += `
+            ORDER BY bn.ngay_tao DESC
+            LIMIT ${limit} OFFSET ${offset}
+            `;
 
         // Thực thi queries
-        const [rows] = await connection.execute(query, queryParams);
+        const [rows] = await connection.execute(query, [idNguoiThan]);
         const [countRows] = await connection.execute(countQuery, countParams);
         
         const total = countRows[0]?.total || 0;

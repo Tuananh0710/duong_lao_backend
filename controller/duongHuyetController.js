@@ -6,7 +6,7 @@ class DuongHuyetController {
     try {
         const { 
             id_benh_nhan, 
-            gia_tri_duong_huyet,
+            gia_tri_duong_huyet,  
             vi_tri_lay_mau,
             trieu_chung_kem_theo,
             thoi_gian_do,
@@ -21,11 +21,11 @@ class DuongHuyetController {
             });
         }
 
-        // Kiểm tra giá trị đường huyết hợp lệ (mmol/L)
-        if (gia_tri_duong_huyet < 1.0 || gia_tri_duong_huyet > 33.3) {
+        // Kiểm tra giá trị đường huyết hợp lệ 
+        if (gia_tri_duong_huyet < 18 || gia_tri_duong_huyet > 600) {
             return res.status(400).json({
                 success: false,
-                message: 'Giá trị đường huyết không hợp lệ (1.0 - 33.3 mmol/L)'
+                message: 'Giá trị đường huyết không hợp lệ (18 - 600 mg/dL)'
             });
         }
 
@@ -50,14 +50,14 @@ class DuongHuyetController {
             }
         }
 
-        // Tự động đánh giá đường huyết
+        // Tự động đánh giá đường huyết 
         const evaluation = DuongHuyetModel.evaluateBloodSugar(gia_tri_duong_huyet, measurementTime);
         
         const data = {
             ...req.body,
             ...evaluation,
             thoi_gian_do: thoi_gian_do || new Date(),
-            thoi_diem_do: measurementTime,  // Thêm thời điểm đo
+            thoi_diem_do: measurementTime,
             vi_tri_lay_mau: vi_tri_lay_mau || 'ngon_tay'
         };
 
@@ -77,7 +77,6 @@ class DuongHuyetController {
         });
     }
 }
-
 
     static async getById(req, res) {
         try {
@@ -166,13 +165,13 @@ class DuongHuyetController {
             const { id } = req.params;
             const updateData = req.body;
             
-            // Nếu có thay đổi giá trị đường huyết, tự động đánh giá lại
+            // Nếu có thay đổi giá trị đường huyết, tự động đánh giá lại 
             if (updateData.gia_tri_duong_huyet !== undefined) {
                 const currentData = await DuongHuyetModel.findById(id);
                 if (currentData) {
-                    const glucose = updateData.gia_tri_duong_huyet;
+                    const glucose = updateData.gia_tri_duong_huyet; 
                     // Giả sử đo trước ăn nếu không có thông tin
-                    const measurementTime = 'truoc_an';
+                    const measurementTime = currentData.thoi_diem_do || 'truoc_an';
                     const evaluation = DuongHuyetModel.evaluateBloodSugar(glucose, measurementTime);
                     updateData.danh_gia_chi_tiet = evaluation.danh_gia_chi_tiet;
                     updateData.muc_do = evaluation.muc_do;
@@ -197,9 +196,6 @@ class DuongHuyetController {
         }
     }
 
-    /**
-     * Xóa dữ liệu đường huyết
-     */
     static async delete(req, res) {
         try {
             const { id } = req.params;
@@ -223,8 +219,7 @@ class DuongHuyetController {
     static async evaluate(req, res) {
         try {
             const { 
-                gia_tri_duong_huyet, 
-                unit = 'mmol/l',
+                gia_tri_duong_huyet,  
                 measurement_time = 'truoc_an'
             } = req.body;
             
@@ -235,20 +230,20 @@ class DuongHuyetController {
                 });
             }
 
-            let glucoseValue = gia_tri_duong_huyet;
-            
-            // Chuyển đổi đơn vị nếu cần
-            if (unit.toLowerCase() === 'mg/dl') {
-                // mg/dL to mmol/L
-                glucoseValue = DuongHuyetModel.convertGlucoseUnit(glucoseValue, 'mg/dl', 'mmol/l');
+            // Kiểm tra giá trị hợp lệ 
+            if (gia_tri_duong_huyet < 18 || gia_tri_duong_huyet > 600) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Giá trị đường huyết không hợp lệ (18 - 600 mg/dL)'
+                });
             }
             
-            const evaluation = DuongHuyetModel.evaluateBloodSugar(glucoseValue, measurement_time);
+            const evaluation = DuongHuyetModel.evaluateBloodSugar(gia_tri_duong_huyet, measurement_time);
             
-            // Thêm thông tin chuyển đổi
+            // Thêm thông tin chuyển đổi để hiển thị
             const conversions = {
-                mmol_l: glucoseValue.toFixed(1),
-                mg_dl: DuongHuyetModel.convertGlucoseUnit(glucoseValue, 'mmol/l', 'mg/dl').toFixed(0)
+                mg_dl: gia_tri_duong_huyet,
+                mmol_l: DuongHuyetModel.convertGlucoseUnit(gia_tri_duong_huyet, 'mg/dl', 'mmol/l').toFixed(1)
             };
             
             res.status(200).json({

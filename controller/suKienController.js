@@ -25,5 +25,31 @@ class suKienController{
             });
         }
     }
+    static async getDsSuKienTrongTuan(req, res) {
+        try {
+            const result = await suKien.getDsSuKienTrongTuan();
+            
+            if (!result || result.tong_so === 0) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'Không có sự kiện nào trong tuần này',
+                    ...result
+                });
+            }
+            
+            return res.status(200).json({
+                success: true,
+                message: 'Lấy danh sách sự kiện trong tuần thành công',
+                ...result
+            });
+        } catch (error) {
+            console.error('Lỗi controller lấy sự kiện trong tuần:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi hệ thống',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
 }
 module.exports=suKienController;
