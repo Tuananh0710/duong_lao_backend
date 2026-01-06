@@ -35,12 +35,12 @@ class sp02Controller {
                 });
             }
 
-            if (gia_tri_spo2 < 70 || gia_tri_spo2 > 100) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Giá trị SpO2 phải nằm trong khoảng 70% - 100%'
-                });
-            }
+            // if (gia_tri_spo2 < 70 || gia_tri_spo2 > 100) {
+            //     return res.status(400).json({
+            //         success: false,
+            //         message: 'Giá trị SpO2 phải nằm trong khoảng 70% - 100%'
+            //     });
+            // }
 
             // Kiểm tra thời gian đo
             let thoiGianDo = thoi_gian_do;
