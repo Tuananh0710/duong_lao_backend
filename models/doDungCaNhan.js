@@ -5,18 +5,24 @@ class DoDungCaNhanModel {
         try {
             const query = `
             SELECT 
-                id,
-                id_benh_nhan,
-                ten_vat_dung,
-                so_luong,
-                tinh_trang,
-                ghi_chu,
-                ngay_them,
-                ngay_tao,
-                ngay_cap_nhat
-            FROM do_dung_ca_nhan
-            WHERE id_benh_nhan = ?
-            ORDER BY ngay_them DESC, ten_vat_dung ASC
+                dd.id,
+                dd.id_phan_loai,
+                pl.ten_loai,
+                pl.mo_ta,
+                dd.nguon_cung_cap,
+                dd.id_benh_nhan,
+                dd.ten_vat_dung,
+                dd.so_luong,
+                dd.tinh_trang,
+                dd.media,
+                dd.ghi_chu,
+                dd.ngay_them,
+                dd.ngay_tao,
+                dd.ngay_cap_nhat
+            FROM do_dung_ca_nhan dd
+            LEFT JOIN phan_loai_do_dung pl ON dd.id_phan_loai = pl.id
+            WHERE dd.id_benh_nhan = ?
+            ORDER BY dd.ngay_them DESC, dd.ten_vat_dung ASC
             `;
             
             if (!idBenhNhan) {
@@ -36,15 +42,19 @@ class DoDungCaNhanModel {
         try {
             const query = `
             INSERT INTO do_dung_ca_nhan 
-            (id_benh_nhan, ten_vat_dung, so_luong, tinh_trang, ghi_chu, ngay_them)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (id_phan_loai, nguon_cung_cap, id_benh_nhan, ten_vat_dung, 
+             so_luong, tinh_trang, media, ghi_chu, ngay_them)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             
             const values = [
+                data.id_phan_loai || null,
+                data.nguon_cung_cap || 'ca_nhan',
                 data.id_benh_nhan,
                 data.ten_vat_dung,
                 data.so_luong || 1,
                 data.tinh_trang || 'tot',
+                data.media || null,
                 data.ghi_chu || null,
                 data.ngay_them || new Date()
             ];
@@ -62,18 +72,24 @@ class DoDungCaNhanModel {
         try {
             const query = `
             UPDATE do_dung_ca_nhan 
-            SET ten_vat_dung = ?,
+            SET id_phan_loai = ?,
+                nguon_cung_cap = ?,
+                ten_vat_dung = ?,
                 so_luong = ?,
                 tinh_trang = ?,
+                media = ?,
                 ghi_chu = ?,
                 ngay_cap_nhat = NOW()
             WHERE id = ?
             `;
             
             const values = [
+                data.id_phan_loai || null,
+                data.nguon_cung_cap || 'ca_nhan',
                 data.ten_vat_dung,
                 data.so_luong,
                 data.tinh_trang,
+                data.media || null,
                 data.ghi_chu || null,
                 id
             ];
@@ -106,11 +122,15 @@ class DoDungCaNhanModel {
     static async timKiemDoDung(idBenhNhan, tenVatDung) {
         try {
             const query = `
-            SELECT *
-            FROM do_dung_ca_nhan
-            WHERE id_benh_nhan = ? 
-            AND ten_vat_dung LIKE ?
-            ORDER BY ten_vat_dung ASC
+            SELECT 
+                dd.*,
+                pl.ten_loai,
+                pl.mo_ta
+            FROM do_dung_ca_nhan dd
+            LEFT JOIN phan_loai_do_dung pl ON dd.id_phan_loai = pl.id
+            WHERE dd.id_benh_nhan = ? 
+            AND dd.ten_vat_dung LIKE ?
+            ORDER BY dd.ten_vat_dung ASC
             `;
             
             const [rows] = await connection.execute(query, [
@@ -129,12 +149,15 @@ class DoDungCaNhanModel {
         try {
             const query = `
             SELECT 
-                tinh_trang,
+                dd.tinh_trang,
+                pl.ten_loai,
                 COUNT(*) as so_luong,
-                SUM(so_luong) as tong_vat_dung
-            FROM do_dung_ca_nhan
-            WHERE id_benh_nhan = ?
-            GROUP BY tinh_trang
+                SUM(dd.so_luong) as tong_vat_dung
+            FROM do_dung_ca_nhan dd
+            LEFT JOIN phan_loai_do_dung pl ON dd.id_phan_loai = pl.id
+            WHERE dd.id_benh_nhan = ?
+            GROUP BY dd.tinh_trang, pl.ten_loai
+            ORDER BY pl.ten_loai, dd.tinh_trang
             `;
             
             const [rows] = await connection.execute(query, [idBenhNhan]);
@@ -142,6 +165,52 @@ class DoDungCaNhanModel {
             
         } catch (error) {
             console.error('Lỗi khi thống kê đồ dùng:', error);
+            throw error;
+        }
+    }
+
+    static async getChiTietDoDung(id) {
+        try {
+            const query = `
+            SELECT 
+                dd.*,
+                pl.ten_loai,
+                pl.mo_ta
+            FROM do_dung_ca_nhan dd
+            LEFT JOIN phan_loai_do_dung pl ON dd.id_phan_loai = pl.id
+            WHERE dd.id = ?
+            `;
+            
+            const [rows] = await connection.execute(query, [id]);
+            return rows[0] || null;
+            
+        } catch (error) {
+            console.error('Lỗi khi lấy chi tiết đồ dùng:', error);
+            throw error;
+        }
+    }
+
+    static async thongKeTheoPhanLoai(idBenhNhan) {
+        try {
+            const query = `
+            SELECT 
+                pl.ten_loai,
+                pl.mo_ta,
+                COUNT(dd.id) as so_vat_dung,
+                SUM(dd.so_luong) as tong_so_luong,
+                AVG(CASE WHEN dd.tinh_trang = 'tot' THEN 1 ELSE 0 END) * 100 as ty_le_tot
+            FROM do_dung_ca_nhan dd
+            LEFT JOIN phan_loai_do_dung pl ON dd.id_phan_loai = pl.id
+            WHERE dd.id_benh_nhan = ?
+            GROUP BY pl.id, pl.ten_loai, pl.mo_ta
+            ORDER BY so_vat_dung DESC
+            `;
+            
+            const [rows] = await connection.execute(query, [idBenhNhan]);
+            return rows;
+            
+        } catch (error) {
+            console.error('Lỗi khi thống kê theo phân loại:', error);
             throw error;
         }
     }

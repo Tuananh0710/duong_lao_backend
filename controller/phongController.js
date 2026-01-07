@@ -2,14 +2,8 @@ const Phong = require('../models/phong');
 class phongController{
     static async getAll(req,res){
         try {
-            const {id_phan_khu}=req.params;
-            if(!id_phan_khu){
-                return res.status(401).json({
-                    success:false,
-                    message:"thieu id phan khu"
-                })
-            }
-            const phong= await Phong.getAllPhong(id_phan_khu);
+            
+            const phong= await Phong.getAllPhong();
             if(phong.length===0){
                 return res.status(401).json({
                     successL: false,

@@ -6,5 +6,6 @@ const { authenticate } = require('../middlewares/auth');
 router.use(authenticate);
 router.get('/',suKienController.getDsSuKien);
 router.get('/trong-tuan', suKienController.getDsSuKienTrongTuan);
+router.get('/loai', suKienController.getDsLoaiSuKien);
 
 module.exports=router

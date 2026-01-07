@@ -212,7 +212,7 @@ class nhipTim {
     static async evaluateHeartRate(heartRate) {
         try {
             // Tên chỉ số cho Nhịp tim
-            let tenChiSo = 'Nhip_tim';
+            let tenChiSo = 'Nhịp tim';
             
            
             

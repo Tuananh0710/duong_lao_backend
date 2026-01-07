@@ -11,7 +11,8 @@ class suKien{
                 ngay,
                 dia_diem,
                 ngay_tao,
-                ngay_cap_nhat
+                ngay_cap_nhat,
+                loai
             FROM su_kien WHERE da_xoa != 1 AND ngay >= CURDATE()
             ORDER BY ngay DESC
             LIMIT 10
@@ -38,6 +39,7 @@ class suKien{
             trang_thai,
             ngay_tao,
             ngay_cap_nhat,
+            loai,
             -- Tính số ngày còn lại đến sự kiện (có thể âm nếu đã qua)
             DATEDIFF(DATE(ngay), CURDATE()) as so_ngay_con_lai,
             -- Xác định ngày trong tuần
@@ -121,5 +123,26 @@ class suKien{
         throw error;
     }
 }
+static async getDsLoaiSuKien() {
+        try {
+            const query = `
+            SELECT DISTINCT loai 
+            FROM su_kien 
+            WHERE da_xoa != 1 
+            AND loai IS NOT NULL 
+            AND loai != ''
+            ORDER BY loai ASC
+            `;
+
+            const [rows] = await connection.execute(query);
+
+            // Trả về mảng các loại sự kiện
+            return rows.map(row => row.loai);
+
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách loại sự kiện:', error);
+            throw error;
+        }
+    }
 }
 module.exports=suKien;

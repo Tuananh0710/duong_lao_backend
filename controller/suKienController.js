@@ -51,5 +51,24 @@ class suKienController{
             });
         }
     }
+    static async getDsLoaiSuKien(req, res) {
+        try {
+            const dsLoaiSuKien = await suKien.getDsLoaiSuKien();
+            
+            return res.status(200).json({
+                success: true,
+                message: 'Lấy danh sách loại sự kiện thành công',
+                danh_sach: dsLoaiSuKien 
+            });
+
+        } catch (error) {
+            console.error('Lỗi controller lấy loại sự kiện:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi hệ thống',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
 }
 module.exports=suKienController;

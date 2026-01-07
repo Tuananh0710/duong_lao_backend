@@ -9,7 +9,6 @@ class Phong{
             LEFT JOIN phan_khu pk ON pk.id = p.id_phan_khu
             WHERE p.da_xoa = 0 
                 AND pk.da_xoa = 0
-                AND p.trang_thai = 'trong'
             ORDER BY 
                 pk.ten_khu ASC,
                 p.so_phong ASC

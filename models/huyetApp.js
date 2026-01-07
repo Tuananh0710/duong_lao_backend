@@ -214,7 +214,7 @@ class huyetAp {
     static async evaluateBloodPressure(tamThu, tamTruong) {
         try {
             // Tên chỉ số cho Huyết áp
-            const tenChiSo = 'Huyet_ap';
+            const tenChiSo = 'Huyết áp';
             
             // Tìm cấu hình mới nhất theo tên chỉ số
             const [configs] = await connection.execute(

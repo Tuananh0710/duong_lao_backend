@@ -5,7 +5,7 @@ class huyetApController{
         try {
             const {id_benh_nhan, tam_thu, tam_truong,thoi_gian_do,vi_tri_do,tu_the_khi_do}= req.body;
 
-            if(!id_benh_nhan || !tam_thu || !tam_truong || !thoi_gian_do || !vi_tri_do || !tu_the_khi_do){
+            if(!id_benh_nhan || !tam_thu || !tam_truong || !vi_tri_do || !tu_the_khi_do){
                 return res.status(400).json({
                     success: false,
                     message: 'Vui lòng cung cấp đầy đủ thông tin'

@@ -213,7 +213,7 @@ class nhietDo {
     static async evaluateTemperature(tempCelsius) {
         try {
             // Tên chỉ số cho Nhiệt độ
-            let tenChiSo = 'Nhiet_do';
+            let tenChiSo = 'Nhiệt độ';
             
             
             // Tìm cấu hình mới nhất theo tên chỉ số

@@ -6,8 +6,7 @@ class congViec{
         
         const query = `
             SELECT 
-                pc.trang_thai,
-                COUNT(*) as so_luong_cong_viec
+                COUNT(*) as tong_so_cong_viec
             FROM phan_cong_cong_viec pc
             INNER JOIN tai_khoan tk ON pc.id_dieu_duong = tk.id
             WHERE tk.id = ? 

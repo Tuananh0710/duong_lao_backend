@@ -1,69 +1,81 @@
 const db = require('../config/database');
 
 class DuongHuyetModel {
-    static async create(data) {
-    try {
-        const {
-            id_benh_nhan,
-            gia_tri_duong_huyet,  
-            thoi_gian_do,
-            thoi_diem_do,
-            vi_tri_lay_mau,
-            trieu_chung_kem_theo,
-            ghi_chu,
-            muc_do,
-            noi_dung_canh_bao,
-            id_cau_hinh_chi_so_canh_bao,
-            danh_gia_chi_tiet
-        } = data;
+   static async create(data) {
+        try {
+            const {
+                id_benh_nhan,
+                gia_tri_duong_huyet,  
+                thoi_gian_do,
+                thoi_diem_do,
+                vi_tri_lay_mau,
+                trieu_chung_kem_theo,
+                ghi_chu,
+                muc_do,
+                noi_dung_canh_bao,
+                id_cau_hinh_chi_so_canh_bao,
+                danh_gia_chi_tiet
+            } = data;
 
-        // Nếu chưa có đánh giá, tự động đánh giá dựa trên cấu hình
-        let evaluationResult = null;
-        if (gia_tri_duong_huyet !== undefined && gia_tri_duong_huyet !== null) {
-            if (!danh_gia_chi_tiet || !muc_do) {
-                evaluationResult = await this.evaluateBloodSugar(
-                    gia_tri_duong_huyet, 
-                    thoi_diem_do || 'khac'
-                );
+            console.log('=== BẮT ĐẦU THÊM DỮ LIỆU ĐƯỜNG HUYẾT ===');
+            console.log(`Bệnh nhân ID: ${id_benh_nhan}`);
+            console.log(`Giá trị đường huyết: ${gia_tri_duong_huyet}`);
+            console.log(`Thời điểm đo: ${thoi_diem_do || 'khac'}`);
+            
+            // Nếu chưa có đánh giá, tự động đánh giá dựa trên cấu hình
+            let evaluationResult = null;
+            if (gia_tri_duong_huyet !== undefined && gia_tri_duong_huyet !== null) {
+                if (!danh_gia_chi_tiet || !muc_do) {
+                    console.log('Tự động đánh giá đường huyết...');
+                    evaluationResult = await this.evaluateBloodSugar(
+                        gia_tri_duong_huyet, 
+                        thoi_diem_do || 'khac'
+                    );
+                } else {
+                    console.log('Đã có đánh giá từ người dùng, bỏ qua tự động đánh giá');
+                }
             }
+
+            const query = `
+                INSERT INTO duong_huyet 
+                (id_benh_nhan, gia_tri_duong_huyet, thoi_gian_do, thoi_diem_do, 
+                 vi_tri_lay_mau, trieu_chung_kem_theo, ghi_chu, muc_do, 
+                 noi_dung_canh_bao, id_cau_hinh_chi_so_canh_bao, danh_gia_chi_tiet)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            const values = [
+                id_benh_nhan,
+                gia_tri_duong_huyet,
+                thoi_gian_do || new Date(),
+                thoi_diem_do || 'khac',
+                vi_tri_lay_mau || 'ngon_tay',
+                trieu_chung_kem_theo || null,
+                ghi_chu || null,
+                evaluationResult ? evaluationResult.muc_do : (muc_do || null),
+                evaluationResult ? evaluationResult.noi_dung_canh_bao : (noi_dung_canh_bao || null),
+                evaluationResult ? evaluationResult.id_cau_hinh : (id_cau_hinh_chi_so_canh_bao || null),
+                evaluationResult ? evaluationResult.danh_gia_chi_tiet : (danh_gia_chi_tiet || null)
+            ];
+
+            console.log('Kết quả đánh giá:', JSON.stringify(evaluationResult, null, 2));
+            
+            const [result] = await db.execute(query, values);
+            
+            const newRecord = await this.findById(result.insertId);
+            
+            console.log('=== KẾT THÚC THÊM DỮ LIỆU ĐƯỜNG HUYẾT ===\n');
+            
+            return {
+                success: true,
+                message: 'Thêm dữ liệu đường huyết thành công',
+                data: newRecord
+            };
+        } catch (error) {
+            console.error('Lỗi khi thêm dữ liệu đường huyết:', error);
+            throw new Error('Không thể thêm dữ liệu đường huyết: ' + error.message);
         }
-
-        const query = `
-            INSERT INTO duong_huyet 
-            (id_benh_nhan, gia_tri_duong_huyet, thoi_gian_do, thoi_diem_do, 
-             vi_tri_lay_mau, trieu_chung_kem_theo, ghi_chu, muc_do, 
-             noi_dung_canh_bao, id_cau_hinh_chi_so_canh_bao, danh_gia_chi_tiet)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-
-        const values = [
-            id_benh_nhan,
-            gia_tri_duong_huyet,
-            thoi_gian_do || new Date(),
-            thoi_diem_do || 'khac',
-            vi_tri_lay_mau || 'ngon_tay',
-            trieu_chung_kem_theo || null,
-            ghi_chu || null,
-            evaluationResult ? evaluationResult.muc_do : (muc_do || null),
-            evaluationResult ? evaluationResult.noi_dung_canh_bao : (noi_dung_canh_bao || null),
-            evaluationResult ? evaluationResult.id_cau_hinh : (id_cau_hinh_chi_so_canh_bao || null),
-            evaluationResult ? evaluationResult.danh_gia_chi_tiet : (danh_gia_chi_tiet || null)
-        ];
-
-        const [result] = await db.execute(query, values);
-        
-        const newRecord = await this.findById(result.insertId);
-        
-        return {
-            success: true,
-            message: 'Thêm dữ liệu đường huyết thành công',
-            data: newRecord
-        };
-    } catch (error) {
-        console.error('Lỗi khi thêm dữ liệu đường huyết:', error);
-        throw new Error('Không thể thêm dữ liệu đường huyết: ' + error.message);
     }
-}
 
     static async findById(id) {
         try {
@@ -214,114 +226,159 @@ class DuongHuyetModel {
 
     
    static async evaluateBloodSugar(glucoseValue) {
-    try {
-        // Tạo tên chỉ số dựa trên thời điểm đo
-        let tenChiSo = 'Duong_huyet';
-        
-        // Tìm cấu hình mới nhất theo tên chỉ số
-        let cauHinh = null;
-        let idCauHinh = null;
-        
-        // Ưu tiên tìm theo tên chỉ số cụ thể
-        const [configs] = await db.execute(
-            'SELECT * FROM cau_hinh_chi_so_canh_bao WHERE ten_chi_so = ? ORDER BY ngay_tao DESC LIMIT 1',
-            [tenChiSo]
-        );
-        
-        // Nếu không tìm thấy tên chỉ số cụ thể, tìm chung
-        if (configs.length === 0) {
-            const [generalConfigs] = await db.execute(
-                'SELECT * FROM cau_hinh_chi_so_canh_bao WHERE ten_chi_so LIKE ? ORDER BY ngay_tao DESC LIMIT 1',
-                ['%Duong_huyet%']
+        try {
+            console.log('=== BẮT ĐẦU ĐÁNH GIÁ ĐƯỜNG HUYẾT ===');
+            console.log(`Giá trị: ${glucoseValue}`);
+            
+            let tenChiSo = 'Đường huyết';
+            console.log(`Tìm cấu hình cho: "${tenChiSo}"`);
+            
+            // Tìm cấu hình mới nhất theo tên chỉ số
+            let cauHinh = null;
+            let idCauHinh = null;
+            
+            // Ưu tiên tìm theo tên chỉ số cụ thể
+            const [configs] = await db.execute(
+                'SELECT * FROM cau_hinh_chi_so_canh_bao WHERE ten_chi_so = ? ORDER BY ngay_tao DESC LIMIT 1',
+                [tenChiSo]
             );
             
-            if (generalConfigs.length > 0) {
-                cauHinh = generalConfigs[0];
+            console.log(`Số cấu hình tìm thấy cho "${tenChiSo}": ${configs.length}`);
+            
+            // Nếu không tìm thấy tên chỉ số cụ thể, tìm chung
+            if (configs.length === 0) {
+                console.log('Tìm cấu hình chung cho "Duong_huyet"...');
+                const [generalConfigs] = await db.execute(
+                    'SELECT * FROM cau_hinh_chi_so_canh_bao WHERE ten_chi_so LIKE ? ORDER BY ngay_tao DESC LIMIT 1',
+                    ['%Đường huyết%']
+                );
+                
+                console.log(`Số cấu hình chung tìm thấy: ${generalConfigs.length}`);
+                
+                if (generalConfigs.length > 0) {
+                    cauHinh = generalConfigs[0];
+                    idCauHinh = cauHinh.id;
+                    console.log(`Sử dụng cấu hình chung ID: ${idCauHinh}`);
+                    console.log(`Tên cấu hình: ${cauHinh.ten_chi_so}`);
+                }
+            } else {
+                cauHinh = configs[0];
                 idCauHinh = cauHinh.id;
+                console.log(`Sử dụng cấu hình cụ thể ID: ${idCauHinh}`);
+                console.log(`Tên cấu hình: ${cauHinh.ten_chi_so}`);
             }
-        } else {
-            cauHinh = configs[0];
-            idCauHinh = cauHinh.id;
-        }
 
-        // Nếu không có cấu hình, sử dụng đánh giá mặc định
-        if (!cauHinh || !cauHinh.gioi_han_canh_bao) {
-            return this.evaluateBloodSugarDefault(glucoseValue, idCauHinh);
-        }
+            // Nếu không có cấu hình, sử dụng đánh giá mặc định
+            if (!cauHinh || !cauHinh.gioi_han_canh_bao) {
+                console.log('Không tìm thấy cấu hình, sử dụng tiêu chuẩn mặc định (ADA)');
+                const result = this.evaluateBloodSugarDefault(glucoseValue, idCauHinh);
+                console.log('Đánh giá mặc định:', JSON.stringify(result, null, 2));
+                console.log('=== KẾT THÚC ĐÁNH GIÁ ===\n');
+                return result;
+            }
 
-        // Parse JSON cấu hình
-        let gioiHan;
-        try {
-            gioiHan = typeof cauHinh.gioi_han_canh_bao === 'string' 
-                ? JSON.parse(cauHinh.gioi_han_canh_bao) 
-                : cauHinh.gioi_han_canh_bao;
-        } catch (e) {
-            console.error('Error parsing gioi_han_canh_bao:', e);
-            return this.evaluateBloodSugarDefault(glucoseValue, idCauHinh);
-        }
+            console.log('Cấu hình đã tìm thấy, tiến hành đánh giá...');
+            
+            // Parse JSON cấu hình
+            let gioiHan;
+            try {
+                gioiHan = typeof cauHinh.gioi_han_canh_bao === 'string' 
+                    ? JSON.parse(cauHinh.gioi_han_canh_bao) 
+                    : cauHinh.gioi_han_canh_bao;
+                    
+                console.log('Giới hạn cấu hình:', JSON.stringify(gioiHan, null, 2));
+            } catch (e) {
+                console.error('Lỗi khi parse JSON cấu hình:', e);
+                console.log('Sử dụng đánh giá mặc định do lỗi parse');
+                const result = this.evaluateBloodSugarDefault(glucoseValue, idCauHinh);
+                console.log('=== KẾT THÚC ĐÁNH GIÁ ===\n');
+                return result;
+            }
 
-        // Đánh giá dựa trên cấu hình
-        return this.evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh);
-        
-    } catch (error) {
-        console.error('Error evaluating blood sugar:', error);
-        return this.evaluateBloodSugarDefault(glucoseValue, null);
+            // Đánh giá dựa trên cấu hình
+            const result = this.evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh);
+            
+            console.log('Kết quả đánh giá từ cấu hình:', JSON.stringify(result, null, 2));
+            console.log('=== KẾT THÚC ĐÁNH GIÁ ===\n');
+            
+            return result;
+            
+        } catch (error) {
+            console.error('Lỗi trong quá trình đánh giá đường huyết:', error);
+            console.log('Sử dụng đánh giá mặc định do lỗi');
+            const result = this.evaluateBloodSugarDefault(glucoseValue, null);
+            console.log('=== KẾT THÚC ĐÁNH GIÁ (lỗi) ===\n');
+            return result;
+        }
     }
-}
 
-    // Hàm đánh giá dựa trên cấu hình JSON
+    // Hàm đánh giá dựa trên cấu hình JSON (có thêm logging)
     static evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh) {
+        console.log('--- Đánh giá dựa trên cấu hình JSON ---');
         const numericValue = parseFloat(glucoseValue);
         
         if (isNaN(numericValue) || !isFinite(numericValue)) {
+            console.log('Giá trị không hợp lệ');
             return {
                 danh_gia_chi_tiet: 'Không thể đánh giá',
                 muc_do: 'binh_thuong',
                 noi_dung_canh_bao: 'Giá trị không hợp lệ',
-                id_cau_hinh: idCauHinh
+                id_cau_hinh: idCauHinh,
+                config_type: 'invalid_value'
             };
         }
 
+        console.log(`Giá trị số: ${numericValue}`);
+        
         // Kiểm tra theo thứ tự: Thấp -> Bình thường -> Cao -> Nguy hiểm
-        // (theo logic từ hàm evaluateSingleValue trước đó)
         
         // Thấp: giá trị trong khoảng [min, max]
         if (gioiHan.thap && gioiHan.thap.min !== undefined && gioiHan.thap.max !== undefined) {
+            console.log(`Kiểm tra mức THẤP: ${gioiHan.thap.min} - ${gioiHan.thap.max}`);
             if (numericValue >= gioiHan.thap.min && numericValue <= gioiHan.thap.max) {
+                console.log('→ Thuộc mức THẤP');
                 return {
                     danh_gia_chi_tiet: gioiHan.thap.danh_gia || 'Đường huyết thấp',
                     muc_do: 'canh_bao',
                     noi_dung_canh_bao: gioiHan.thap.message || 'Giá trị thấp, cần theo dõi.',
-                    id_cau_hinh: idCauHinh
+                    id_cau_hinh: idCauHinh,
+                    config_type: 'thap'
                 };
             }
         }
 
         // Bình thường: giá trị trong khoảng [min, max]
         if (gioiHan.binh_thuong && gioiHan.binh_thuong.min !== undefined && gioiHan.binh_thuong.max !== undefined) {
+            console.log(`Kiểm tra mức BÌNH THƯỜNG: ${gioiHan.binh_thuong.min} - ${gioiHan.binh_thuong.max}`);
             if (numericValue >= gioiHan.binh_thuong.min && numericValue <= gioiHan.binh_thuong.max) {
+                console.log('→ Thuộc mức BÌNH THƯỜNG');
                 return {
                     danh_gia_chi_tiet: gioiHan.binh_thuong.danh_gia || 'Bình thường',
                     muc_do: 'binh_thuong',
                     noi_dung_canh_bao: gioiHan.binh_thuong.message || null,
-                    id_cau_hinh: idCauHinh
+                    id_cau_hinh: idCauHinh,
+                    config_type: 'binh_thuong'
                 };
             }
         }
 
         // Cao: giá trị trong khoảng [min, max]
         if (gioiHan.cao && gioiHan.cao.min !== undefined && gioiHan.cao.max !== undefined) {
+            console.log(`Kiểm tra mức CAO: ${gioiHan.cao.min} - ${gioiHan.cao.max}`);
             if (numericValue >= gioiHan.cao.min && numericValue <= gioiHan.cao.max) {
+                console.log('→ Thuộc mức CAO');
                 return {
                     danh_gia_chi_tiet: gioiHan.cao.danh_gia || 'Đường huyết cao',
                     muc_do: 'canh_bao',
                     noi_dung_canh_bao: gioiHan.cao.message || 'Giá trị cao, cần theo dõi.',
-                    id_cau_hinh: idCauHinh
+                    id_cau_hinh: idCauHinh,
+                    config_type: 'cao'
                 };
             }
         }
 
         // Nguy hiểm: Nếu giá trị không thuộc bất kỳ mốc nào
+        console.log('Không thuộc mức nào, xác định là NGUY HIỂM');
         let nguyHiemMessage = 'Giá trị nguy hiểm! Cần can thiệp ngay.';
         let nguyHiemDanhGia = 'Nguy hiểm';
         
@@ -336,107 +393,77 @@ class DuongHuyetModel {
             danh_gia_chi_tiet: nguyHiemDanhGia,
             muc_do: 'nguy_hiem',
             noi_dung_canh_bao: nguyHiemMessage,
-            id_cau_hinh: idCauHinh
+            id_cau_hinh: idCauHinh,
+            config_type: 'nguy_hiem'
         };
     }
 
-    // Hàm đánh giá mặc định (sử dụng khi không có cấu hình)
-    static evaluateBloodSugarDefault(glucoseValue, measurementTime = 'khac', idCauHinh = null) {
+    // Hàm đánh giá mặc định (sử dụng khi không có cấu hình) - có thêm logging
+    static evaluateBloodSugarDefault(glucoseValue, idCauHinh = null) {
+        console.log('--- Đánh giá mặc định (tiêu chuẩn ADA) ---');
+        
         const numericValue = parseFloat(glucoseValue);
         
         if (isNaN(numericValue) || !isFinite(numericValue)) {
+            console.log('Giá trị không hợp lệ');
             return {
                 danh_gia_chi_tiet: 'Không thể đánh giá',
                 muc_do: 'binh_thuong',
                 noi_dung_canh_bao: 'Giá trị không hợp lệ',
-                id_cau_hinh: idCauHinh
+                id_cau_hinh: idCauHinh,
+                config_type: 'default_invalid'
             };
         }
 
+        console.log(`Giá trị: ${numericValue} mmol/L`);
+        
         // Tiêu chuẩn ADA mặc định
         let danhGiaChiTiet = 'Bình thường';
         let mucDo = 'binh_thuong';
         let noiDungCanhBao = null;
+        let configType = 'default_ada';
 
-        if (measurementTime === 'truoc_an' || measurementTime === 'doi') {
-            // Trước ăn hoặc đói (mmol/L)
-            if (numericValue < 3.9) { // < 70 mg/dL
-                danhGiaChiTiet = 'Hạ đường huyết nặng';
-                mucDo = 'nguy_hiem';
-                noiDungCanhBao = 'Hạ đường huyết nặng - Cần xử trí ngay';
-            } else if (numericValue < 4.4) { // < 80 mg/dL
-                danhGiaChiTiet = 'Hạ đường huyết nhẹ';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Hạ đường huyết nhẹ';
-            } else if (numericValue >= 4.4 && numericValue <= 5.6) { // 80-100 mg/dL
-                danhGiaChiTiet = 'Bình thường';
-                mucDo = 'binh_thuong';
-            } else if (numericValue >= 5.7 && numericValue <= 6.9) { // 101-125 mg/dL
-                danhGiaChiTiet = 'Tiền đái tháo đường';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Tiền đái tháo đường';
-            } else if (numericValue >= 7.0 && numericValue < 11.1) { // 126-199 mg/dL
-                danhGiaChiTiet = 'Đái tháo đường';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Đái tháo đường - Cần theo dõi';
-            } else if (numericValue >= 11.1) { // ≥ 200 mg/dL
-                danhGiaChiTiet = 'Đường huyết rất cao';
-                mucDo = 'nguy_hiem';
-                noiDungCanhBao = 'Đường huyết rất cao - Nguy cơ hôn mê';
-            }
-        } else if (measurementTime === 'sau_an') {
-            // Sau ăn 2 giờ (mmol/L)
-            if (numericValue < 3.9) { // < 70 mg/dL
-                danhGiaChiTiet = 'Hạ đường huyết nặng';
-                mucDo = 'nguy_hiem';
-                noiDungCanhBao = 'Hạ đường huyết nặng - Cần xử trí ngay';
-            } else if (numericValue < 4.4) { // < 80 mg/dL
-                danhGiaChiTiet = 'Hạ đường huyết nhẹ';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Hạ đường huyết nhẹ';
-            } else if (numericValue >= 4.4 && numericValue <= 7.8) { // 80-140 mg/dL
-                danhGiaChiTiet = 'Bình thường';
-                mucDo = 'binh_thuong';
-            } else if (numericValue >= 7.9 && numericValue <= 11.0) { // 141-199 mg/dL
-                danhGiaChiTiet = 'Đường huyết sau ăn cao';
-                mucDo = 'canh_bao';
-                noiDungCanhBao = 'Đường huyết sau ăn cao';
-            } else if (numericValue >= 11.1) { // ≥ 200 mg/dL
-                danhGiaChiTiet = 'Đường huyết sau ăn rất cao';
-                mucDo = 'nguy_hiem';
-                noiDungCanhBao = 'Đường huyết sau ăn rất cao';
-            }
-        } else {
-            // Mặc định (mmol/L)
-            if (numericValue < 3.9) { // < 70 mg/dL
+    
+            console.log('Áp dụng tiêu chuẩn MẶC ĐỊNH');
+            configType = 'default_chung';
+            
+            if (numericValue < 3.9) {
                 danhGiaChiTiet = 'Hạ đường huyết';
                 mucDo = 'nguy_hiem';
                 noiDungCanhBao = 'Hạ đường huyết';
-            } else if (numericValue >= 3.9 && numericValue <= 6.1) { // 70-110 mg/dL
+                console.log(`→ Hạ đường huyết (< 3.9)`);
+            } else if (numericValue >= 3.9 && numericValue <= 6.1) {
                 danhGiaChiTiet = 'Bình thường';
                 mucDo = 'binh_thuong';
-            } else if (numericValue >= 6.2 && numericValue <= 7.8) { // 111-140 mg/dL
+                console.log(`→ Bình thường (3.9 - 6.1)`);
+            } else if (numericValue >= 6.2 && numericValue <= 7.8) {
                 danhGiaChiTiet = 'Đường huyết cao nhẹ';
                 mucDo = 'canh_bao';
                 noiDungCanhBao = 'Đường huyết cao nhẹ';
-            } else if (numericValue >= 7.9 && numericValue <= 11.0) { // 141-199 mg/dL
+                console.log(`→ Đường huyết cao nhẹ (6.2 - 7.8)`);
+            } else if (numericValue >= 7.9 && numericValue <= 11.0) {
                 danhGiaChiTiet = 'Đường huyết cao vừa';
                 mucDo = 'canh_bao';
                 noiDungCanhBao = 'Đường huyết cao vừa';
-            } else { // ≥ 200 mg/dL
+                console.log(`→ Đường huyết cao vừa (7.9 - 11.0)`);
+            } else {
                 danhGiaChiTiet = 'Đường huyết cao nặng';
                 mucDo = 'nguy_hiem';
                 noiDungCanhBao = 'Đường huyết cao nặng';
+                console.log(`→ Đường huyết cao nặng (≥ 11.1)`);
             }
-        }
 
+        console.log(`Kết quả: ${danhGiaChiTiet}, Mức độ: ${mucDo}`);
+        
         return { 
             danh_gia_chi_tiet: danhGiaChiTiet,  
             muc_do: mucDo, 
             noi_dung_canh_bao: noiDungCanhBao,
-            id_cau_hinh: idCauHinh
+            id_cau_hinh: idCauHinh,
+            config_type: configType
         };
     }
+
 
     // Hàm chuyển đổi đơn vị đường huyết
     static convertGlucoseUnit(value, fromUnit, toUnit) {

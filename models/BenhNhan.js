@@ -143,6 +143,7 @@ class BenhNhan {
                 `
                 SELECT
                     bn.id,
+                    DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(bn.ngay_sinh, '%Y') AS tuoi,
                     bn.ho_ten,
                     bn.ngay_sinh,
                     bn.gioi_tinh,

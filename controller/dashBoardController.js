@@ -2,17 +2,21 @@ const benhNhan = require('../models/BenhNhan');
 const congViec = require('../models/congViec');
 const thongBao = require('../models/ThongBao');
 const lichThamBenh = require('../models/lichThamBenh');
-const huyetap= require('../models/huyetApp');
-const nhiptim= require('../models/nhipTim');
-const nhietdo= require ('../models/nhietdo');
-const duonghuyet= require('../models/duongHuyet');
+const huyetap = require('../models/huyetApp');
+const nhiptim = require('../models/nhipTim');
+const nhietdo = require('../models/nhietdo');
+const duonghuyet = require('../models/duongHuyet');
 
 class dashBoard {
     static async getAll(req, res) {
         try {
-            // Lấy id_nhan_vien từ req.user (token payload)
             const idNhanVien = req.user?.id_nhan_vien;
             const idTaiKhoan = req.user?.id_tai_khoan;
+            
+            console.log('=== DEBUG DASHBOARD ===');
+            console.log('idNhanVien từ token:', idNhanVien);
+            console.log('idTaiKhoan từ token:', idTaiKhoan);
+            console.log('req.user:', JSON.stringify(req.user, null, 2));
             
             if (!idNhanVien) {
                 return res.status(400).json({
@@ -21,8 +25,9 @@ class dashBoard {
                 });
             }
             
-            // Đổi tên biến để phù hợp với tên hàm model (nếu cần)
             const idDieuDuong = idNhanVien;
+            
+            console.log('idDieuDuong (dùng cho model):', idDieuDuong);
             
             const [
                 tong_so_benh_nhan,
@@ -34,8 +39,10 @@ class dashBoard {
                     console.error('Lỗi khi lấy tổng số bệnh nhân:', err);
                     return 0;
                 }),
-                congViec.getCongViecByDieuDuong(parseInt(idTaiKhoan)).catch(err => {
+                congViec.getCongViecByDieuDuong(parseInt(idDieuDuong)).catch(err => {
                     console.error('Lỗi khi lấy tổng số công việc:', err);
+                    console.error('Chi tiết lỗi công việc:', err.message);
+                    console.error('Stack trace:', err.stack);
                     return 0;
                 }),
                 thongBao.countByType('canh_bao').catch(err => {
@@ -48,11 +55,17 @@ class dashBoard {
                 })
             ]);
             
+            console.log('Kết quả các promise:');
+            console.log('- tong_so_benh_nhan:', tong_so_benh_nhan);
+            console.log('- tong_so_cong_viec:', tong_so_cong_viec);
+            console.log('- tong_so_thong_bao:', tong_so_thong_bao);
+            console.log('- tong_so_lich:', tong_so_lich);
+            
             return res.status(200).json({
                 success: true,
                 message: 'Lấy dữ liệu dashboard thành công',
                 tong_so_benh_nhan: tong_so_benh_nhan || 0,
-                ...tong_so_cong_viec || 0,
+                ...tong_so_cong_viec || 0, 
                 tong_so_lich: tong_so_lich || 0,
                 tong_so_thong_bao: tong_so_thong_bao || 0,
                 id_nhan_vien: parseInt(idNhanVien),
@@ -61,6 +74,7 @@ class dashBoard {
             
         } catch (error) {
             console.error('Lỗi trong getAll dashboard:', error);
+            console.error('Error stack:', error.stack);
             return res.status(500).json({
                 success: false,
                 message: 'Lỗi hệ thống',
@@ -68,6 +82,7 @@ class dashBoard {
             });
         }
     }
+    
     static async getChiSoByBenhNhan(req,res){
         try {
             const { idBenhNhan } = req.params;
