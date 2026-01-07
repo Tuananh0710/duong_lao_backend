@@ -16,10 +16,11 @@ class phongController{
                     message:"ko tim thay phong"
                 });
             }
+            const phongArray = phong.map(item => item.ten_phong_day_du);
             return res.status(200).json({
                 success:true,
                 message:"lay ds phong thanh cong",
-                ...phong
+                phong:phongArray
             })
         } catch (error) {
              console.error('Lỗi trong controller getALL:', error);

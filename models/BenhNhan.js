@@ -1,4 +1,5 @@
 const connection = require('../config/database');
+const MucDoHelper = require('../helpers/mucDoHelper'); // Import helper mới
 
 class BenhNhan {
     static async getTongSoBenhNhan(idDieuDuong) {
@@ -35,7 +36,7 @@ class BenhNhan {
             
             const offset = (page - 1) * limit;
             
-            // Query tối ưu: Lấy tất cả thông tin + tính trạng thái trong 1 query
+            // Query chính - không còn chứa logic mức độ phức tạp
             let query = `
                 SELECT 
                     bn.id,
@@ -44,164 +45,7 @@ class BenhNhan {
                     bn.gioi_tinh,
                     CONCAT(pk.ten_khu, '-', p.so_phong) as phong,
                     bn.kha_nang_sinh_hoat,
-                    COALESCE(
-                        (
-                            SELECT 
-                                CASE 
-                                    -- Mức 3: Nguy hiểm (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Nguy hiểm'
-                                    
-                                    -- Mức 2: Cần theo dõi (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Cần theo dõi'
-                                    
-                                    -- Mức 1: Bình thường (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Bình thường'
-                                    
-                                    -- Nếu không có chỉ số trong 24h, kiểm tra chỉ số cũ hơn
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) THEN 'Nguy hiểm '
-                                    
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) THEN 'Cần theo dõi '
-                                    
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) THEN 'Bình thường '
-                                    
-                                    -- Mặc định: Chưa có dữ liệu
-                                    ELSE 'Chưa có dữ liệu'
-                                END
-                        ),
-                        'Chưa có dữ liệu'
-                    ) as tinh_trang_hien_tai
+                    bn.ngay_nhap_vien
                 FROM benh_nhan bn
                 INNER JOIN dieu_duong_benh_nhan ddbn ON ddbn.id_benh_nhan = bn.id 
                     AND ddbn.id_dieu_duong = ?
@@ -212,6 +56,7 @@ class BenhNhan {
                 LEFT JOIN phan_khu pk ON pk.id = p.id_phan_khu AND pk.da_xoa = 0
                 WHERE bn.da_xoa = 0
             `;
+            
             const params = [idDieuDuong];
             
             if (search) {
@@ -220,24 +65,42 @@ class BenhNhan {
                 params.push(searchTerm, searchTerm);
             }
             
-            // Sắp xếp theo mức độ nguy hiểm trước (ưu tiên dữ liệu mới)
+            // Lấy dữ liệu cơ bản
             query += ` 
-                ORDER BY 
-                    CASE 
-                        WHEN tinh_trang_hien_tai LIKE 'Nguy hiểm%' THEN 
-                            CASE WHEN tinh_trang_hien_tai LIKE '%' THEN 2 ELSE 1 END
-                        WHEN tinh_trang_hien_tai LIKE 'Cần theo dõi%' THEN 
-                            CASE WHEN tinh_trang_hien_tai LIKE '%' THEN 4 ELSE 3 END
-                        WHEN tinh_trang_hien_tai LIKE 'Bình thường%' THEN 
-                            CASE WHEN tinh_trang_hien_tai LIKE '%' THEN 6 ELSE 5 END
-                        ELSE 7
-                    END,
-                    bn.ngay_nhap_vien DESC 
+                ORDER BY bn.ngay_nhap_vien DESC 
                 LIMIT ? OFFSET ?`;
             params.push(limit, offset);
             
             const [rows] = await connection.query(query, params);
             
+            // Thêm mức độ cảnh báo cho từng bệnh nhân
+            const rowsWithTinhTrang = await Promise.all(
+                rows.map(async (row) => {
+                    const tinhTrang = await MucDoHelper.getMucDoCaoNhat(row.id);
+                    return {
+                        ...row,
+                        tinh_trang_hien_tai: tinhTrang
+                    };
+                })
+            );
+            
+            // Sắp xếp lại theo mức độ cảnh báo
+            rowsWithTinhTrang.sort((a, b) => {
+                const priority = {
+                    'Nguy hiểm': 1,
+                    'Cần theo dõi': 2,
+                    'Bình thường': 3,
+                    'Bình thường (dữ liệu cũ)': 4,
+                    'Chưa có dữ liệu': 5
+                };
+                
+                const priA = priority[a.tinh_trang_hien_tai] || 6;
+                const priB = priority[b.tinh_trang_hien_tai] || 6;
+                
+                return priA - priB || new Date(b.ngay_nhap_vien) - new Date(a.ngay_nhap_vien);
+            });
+            
+            // Đếm tổng số bệnh nhân
             let countQuery = `
                 SELECT COUNT(DISTINCT bn.id) as tong_so
                 FROM benh_nhan bn
@@ -246,6 +109,7 @@ class BenhNhan {
                     AND ddbn.trang_thai = 'dang_quan_ly'
                 WHERE bn.da_xoa = 0
             `;
+            
             const countParams = [idDieuDuong];
             
             if (search) {
@@ -259,7 +123,7 @@ class BenhNhan {
             const totalPages = Math.ceil(total / limit);
             
             return {
-                data: rows,
+                data: rowsWithTinhTrang,
                 total: total,
                 page: page,
                 limit: limit,
@@ -274,7 +138,7 @@ class BenhNhan {
 
     static async getThongTinChiTietBenhNhan(id) {
         try {
-            // Query tối ưu: Lấy tất cả thông tin + tính trạng thái trong 1 query
+            // Sửa phần query người thân: lấy người thân chính, nếu không có thì lấy người thân đầu tiên
             const [rows] = await connection.query(
                 `
                 SELECT
@@ -295,9 +159,36 @@ class BenhNhan {
                     hs.tien_su_benh,
                     hs.di_ung_thuoc,
                     hs.lich_su_phau_thuat,
-                    nt.ho_ten as nguoi_than_ho_ten,
-                    nt.moi_quan_he as moi_quan_he,
-                    nt.so_dien_thoai as sdt_nguoi_than,
+                    -- Sửa phần người thân: lấy người thân chính, nếu không có thì lấy người thân đầu tiên
+                    (
+                        SELECT nt.ho_ten 
+                        FROM nguoi_than_benh_nhan nt 
+                        WHERE nt.id_benh_nhan = bn.id 
+                        ORDER BY 
+                            -- Ưu tiên người thân chính trước
+                            CASE WHEN nt.la_nguoi_lien_he_chinh = 1 THEN 0 ELSE 1 END,
+                            -- Sau đó sắp xếp theo ID (người thân cũ nhất)
+                            nt.id ASC
+                        LIMIT 1
+                    ) as nguoi_than_ho_ten,
+                    (
+                        SELECT nt.moi_quan_he 
+                        FROM nguoi_than_benh_nhan nt 
+                        WHERE nt.id_benh_nhan = bn.id 
+                        ORDER BY 
+                            CASE WHEN nt.la_nguoi_lien_he_chinh = 1 THEN 0 ELSE 1 END,
+                            nt.id ASC
+                        LIMIT 1
+                    ) as moi_quan_he,
+                    (
+                        SELECT nt.so_dien_thoai 
+                        FROM nguoi_than_benh_nhan nt 
+                        WHERE nt.id_benh_nhan = bn.id 
+                        ORDER BY 
+                            CASE WHEN nt.la_nguoi_lien_he_chinh = 1 THEN 0 ELSE 1 END,
+                            nt.id ASC
+                        LIMIT 1
+                    ) as sdt_nguoi_than,
                     (
                         SELECT GROUP_CONCAT(DISTINCT dv.ten_dich_vu SEPARATOR ', ')
                         FROM benh_nhan_dich_vu bndv
@@ -305,169 +196,9 @@ class BenhNhan {
                         WHERE bndv.id_benh_nhan = bn.id
                             AND bndv.trang_thai = 'dang_su_dung'
                             AND dv.da_xoa = 0
-                    ) as ten_dich_vu,
-                    COALESCE(
-                        (
-                            SELECT 
-                                CASE 
-                                    -- Mức 3: Nguy hiểm (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Nguy hiểm'
-                                    
-                                    -- Mức 2: Cần theo dõi (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Cần theo dõi'
-                                    
-                                    -- Mức 1: Bình thường (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Bình thường'
-                                    
-                                    -- Nếu không có chỉ số trong 24h, kiểm tra chỉ số cũ hơn
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) THEN 'Nguy hiểm '
-                                    
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) THEN 'Cần theo dõi '
-                                    
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) THEN 'Bình thường '
-                                    
-                                    -- Mặc định: Chưa có dữ liệu
-                                    ELSE 'Chưa có dữ liệu'
-                                END
-                        ),
-                        'Chưa có dữ liệu'
-                    ) as tinh_trang_hien_tai
+                    ) as ten_dich_vu
                 FROM benh_nhan bn
                 LEFT JOIN ho_so_y_te_benh_nhan hs ON hs.id_benh_nhan = bn.id
-                LEFT JOIN nguoi_than_benh_nhan nt ON nt.id_benh_nhan = bn.id 
-                    AND nt.la_nguoi_lien_he_chinh = 1
                 LEFT JOIN phong_o_benh_nhan pobn ON pobn.id_benh_nhan = bn.id 
                     AND (pobn.ngay_ket_thuc_o IS NULL OR pobn.ngay_ket_thuc_o > CURDATE())
                 LEFT JOIN phong p ON p.id = pobn.id_phong AND p.da_xoa = 0
@@ -475,7 +206,14 @@ class BenhNhan {
                 WHERE bn.id = ? AND bn.da_xoa = 0
                 `, [id]);
             
-            return rows.length > 0 ? rows[0] : null;
+            if (rows.length === 0) {
+                return null;
+            }
+            
+            const benhNhan = rows[0];
+            benhNhan.tinh_trang_hien_tai = await MucDoHelper.getMucDoCaoNhat(id);
+            
+            return benhNhan;
             
         } catch (error) {
             throw error;
@@ -490,7 +228,7 @@ class BenhNhan {
 
             const offset = (page - 1) * limit;
             
-            // Query tối ưu: Lấy tất cả thông tin + tính trạng thái trong 1 query
+            // Query đơn giản hơn
             let query = `
                 SELECT 
                     bn.id,
@@ -510,165 +248,7 @@ class BenhNhan {
                     DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(bn.ngay_sinh, '%Y') AS tuoi,
                     ntbn.moi_quan_he,
                     ntbn.so_dien_thoai as sdt_nguoi_than,
-                    ntbn.email as email_nguoi_than,
-                    COALESCE(
-                        (
-                            SELECT 
-                                CASE 
-                                    -- Mức 3: Nguy hiểm (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Nguy hiểm'
-                                    
-                                    -- Mức 2: Cần theo dõi (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Cần theo dõi'
-                                    
-                                    -- Mức 1: Bình thường (trong 24h)
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        AND thoi_gian_do >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                                        LIMIT 1
-                                    ) THEN 'Bình thường'
-                                    
-                                    -- Nếu không có chỉ số trong 24h, kiểm tra chỉ số cũ hơn
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'nguy_hiem'
-                                        LIMIT 1
-                                    ) THEN 'Nguy hiểm '
-                                    
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'canh_bao'
-                                        LIMIT 1
-                                    ) THEN 'Cần theo dõi '
-                                    
-                                    WHEN EXISTS (
-                                        SELECT 1 FROM huyet_ap 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhip_tim 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM nhiet_do 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) OR EXISTS (
-                                        SELECT 1 FROM duong_huyet 
-                                        WHERE id_benh_nhan = bn.id 
-                                        AND muc_do = 'binh_thuong'
-                                        LIMIT 1
-                                    ) THEN 'Bình thường '
-                                    
-                                    -- Mặc định: Chưa có dữ liệu
-                                    ELSE 'Chưa có dữ liệu'
-                                END
-                        ),
-                        'Chưa có dữ liệu'
-                    ) as tinh_trang_hien_tai
+                    ntbn.email as email_nguoi_than
                 FROM nguoi_than_benh_nhan ntbn
                 INNER JOIN benh_nhan bn ON ntbn.id_benh_nhan = bn.id
                 LEFT JOIN phong_o_benh_nhan pobn ON pobn.id_benh_nhan = bn.id 
@@ -707,17 +287,7 @@ class BenhNhan {
             }
 
             query += `
-                ORDER BY 
-                    CASE 
-                        WHEN tinh_trang_hien_tai LIKE 'Nguy hiểm%' THEN 
-                            CASE WHEN tinh_trang_hien_tai LIKE '%' THEN 2 ELSE 1 END
-                        WHEN tinh_trang_hien_tai LIKE 'Cần theo dõi%' THEN 
-                            CASE WHEN tinh_trang_hien_tai LIKE '%' THEN 4 ELSE 3 END
-                        WHEN tinh_trang_hien_tai LIKE 'Bình thường%' THEN 
-                            CASE WHEN tinh_trang_hien_tai LIKE '%(dữ liệu cũ)' THEN 6 ELSE 5 END
-                        ELSE 7
-                    END,
-                    bn.ngay_tao DESC
+                ORDER BY bn.ngay_tao DESC
                 LIMIT ${limit} OFFSET ${offset}
             `;
 
@@ -726,9 +296,36 @@ class BenhNhan {
             
             const total = countRows[0]?.total || 0;
 
+            // Thêm tình trạng cho từng bệnh nhân
+            const rowsWithTinhTrang = await Promise.all(
+                rows.map(async (row) => {
+                    const tinhTrang = await MucDoHelper.getMucDoCaoNhat(row.id);
+                    return {
+                        ...row,
+                        tinh_trang_hien_tai: tinhTrang
+                    };
+                })
+            );
+            
+            // Sắp xếp theo mức độ cảnh báo
+            rowsWithTinhTrang.sort((a, b) => {
+                const priority = {
+                    'Nguy hiểm': 1,
+                    'Cần theo dõi': 2,
+                    'Bình thường': 3,
+                    'Bình thường (dữ liệu cũ)': 4,
+                    'Chưa có dữ liệu': 5
+                };
+                
+                const priA = priority[a.tinh_trang_hien_tai] || 6;
+                const priB = priority[b.tinh_trang_hien_tai] || 6;
+                
+                return priA - priB || new Date(b.ngay_tao) - new Date(a.ngay_tao);
+            });
+
             return {
                 success: true,
-                data: rows,
+                data: rowsWithTinhTrang,
                 total: total,
                 page: page,
                 limit: limit,
