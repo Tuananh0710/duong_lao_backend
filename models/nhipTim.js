@@ -144,6 +144,24 @@ class nhipTim {
         }
     };
 
+    static async findLastestByBenhNhanToday(idBenhNhan) {
+        try {
+            const query = `
+                SELECT nt.*, bn.ho_ten, bn.ngay_sinh, bn.gioi_tinh
+                FROM nhip_tim nt
+                LEFT JOIN benh_nhan bn ON nt.id_benh_nhan = bn.id
+                WHERE nt.id_benh_nhan = ? AND DATE(nt.thoi_gian_do) = CURDATE()
+                ORDER BY nt.thoi_gian_do DESC
+                LIMIT 1
+            `;
+            const [rows] = await connection.execute(query, [idBenhNhan]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Lỗi khi lấy dữ liệu nhịp tim gần nhất:', error);
+            throw new Error('Không thể lấy dữ liệu nhịp tim gần nhất: ' + error.message);
+        }
+    };
+
     static async update(id, data) {
         try {
             const fields = [];
@@ -260,7 +278,7 @@ class nhipTim {
             }
 
             // Đánh giá dựa trên cấu hình
-            return this.evaluateBasedOnConfig(heartRate, gioiHan, tinhTrangBenhNhan, idCauHinh);
+            return this.evaluateBasedOnConfig(heartRate, gioiHan, idCauHinh);
             
         } catch (error) {
             console.error('Error evaluating heart rate:', error);

@@ -151,6 +151,24 @@ class huyetAp {
             throw new Error('Không thể lấy dữ liệu huyết áp gần nhất: ' + error.message);
         }
     };
+    static async findLastestByIdToday(id) {
+    try {
+        const query = `
+            SELECT ha.*, bn.ho_ten, bn.ngay_sinh, bn.gioi_tinh
+            FROM huyet_ap ha
+            LEFT JOIN benh_nhan bn ON ha.id_benh_nhan = bn.id
+            WHERE ha.id_benh_nhan = ? 
+                AND DATE(ha.thoi_gian_do) = CURDATE()
+            ORDER BY ha.thoi_gian_do DESC
+            LIMIT 1
+        `;
+        const [rows] = await connection.execute(query, [id]);
+        return rows[0] || null;
+    } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu huyết áp gần nhất hôm nay:', error);
+        throw new Error('Không thể lấy dữ liệu huyết áp gần nhất hôm nay: ' + error.message);
+    }
+}
 
     static async update(id, data) {
         try {

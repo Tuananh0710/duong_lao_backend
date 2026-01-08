@@ -27,6 +27,15 @@ const login = async (req, res, next) => {
         
         const user = users[0];
         
+        // Kiểm tra nếu trạng thái là inactive
+        if (user.trang_thai === 'inactive') {
+            return res.status(403).json({
+                success: false,
+                message: 'Vui lòng đổi mật khẩu để kích hoạt tài khoản',
+                code: 'MUST_CHANGE_PASSWORD'
+            });
+        }
+        
         if (user.trang_thai !== 'active') {
             return res.status(401).json({
                 success: false,
@@ -141,6 +150,15 @@ const loginNguoiNha = async (req, res, next) => {
             });
         }
         
+        // Kiểm tra nếu trạng thái là inactive
+        if (user.trang_thai === 'inactive') {
+            return res.status(403).json({
+                success: false,
+                message: 'Vui lòng đổi mật khẩu để kích hoạt tài khoản',
+                code: 'MUST_CHANGE_PASSWORD'
+            });
+        }
+        
         if (user.trang_thai !== 'active') {
             return res.status(401).json({
                 success: false,
@@ -200,8 +218,95 @@ const loginNguoiNha = async (req, res, next) => {
     }
 };
 
+const changePassword = async (req, res, next) => {
+    try {
+        const { so_dien_thoai, email, mat_khau_cu, mat_khau_moi } = req.body;
+
+        // Validate input
+        if ((!so_dien_thoai && !email) || !mat_khau_cu || !mat_khau_moi) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng nhập sdt/email, mật khẩu cũ và mật khẩu mới'
+            });
+        }
+
+        // Kiểm tra độ dài mật khẩu mới
+        if (mat_khau_moi.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+            });
+        }
+
+        // Tìm user theo số điện thoại hoặc email
+        const query = so_dien_thoai
+            ? `SELECT id, mat_khau, trang_thai FROM tai_khoan WHERE so_dien_thoai = ? AND da_xoa = 0`
+            : `SELECT id, mat_khau, trang_thai FROM tai_khoan WHERE email = ? AND da_xoa = 0`;
+
+        const [users] = await connection.execute(query, [so_dien_thoai || email]);
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tài khoản không tồn tại'
+            });
+        }
+
+        const user = users[0];
+
+        // Kiểm tra mật khẩu cũ
+        const isCorrectPassword = await comparePassword(mat_khau_cu, user.mat_khau);
+        
+        if (!isCorrectPassword) {
+            return res.status(401).json({
+                success: false,
+                message: 'Mật khẩu cũ không chính xác'
+            });
+        }
+
+        // Mã hóa mật khẩu mới
+        const hashedPassword = await hashPassword(mat_khau_moi);
+
+        // Cập nhật mật khẩu và tự động kích hoạt tài khoản nếu đang inactive
+        const [result] = await connection.execute(
+            `UPDATE tai_khoan 
+             SET mat_khau = ?, 
+                 trang_thai = 'active',
+                 ngay_cap_nhat = NOW()
+             WHERE id = ?`,
+            [hashedPassword, user.id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(500).json({
+                success: false,
+                message: 'Đổi mật khẩu thất bại'
+            });
+        }
+
+        // Kiểm tra và thông báo nếu tài khoản được kích hoạt
+        let activationMessage = '';
+        if (user.trang_thai === 'inactive') {
+            activationMessage = 'Tài khoản đã được kích hoạt thành công.';
+        }
+
+        res.json({
+            success: true,
+            message: `Đổi mật khẩu thành công${activationMessage ? ' ' + activationMessage : ''}`,
+            data: {
+                trang_thai: 'active',
+                da_kich_hoat: user.trang_thai === 'inactive'
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports={
     login,
     getProfile,
-    loginNguoiNha
+    loginNguoiNha,
+    changePassword
 }

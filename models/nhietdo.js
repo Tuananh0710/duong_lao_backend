@@ -149,6 +149,24 @@ class nhietDo {
         }
     };
 
+    static async findLatestByBenhNhanToday(idBenhNhan) {
+        try {
+            const query = `
+                SELECT nd.*, bn.ho_ten, bn.ngay_sinh, bn.gioi_tinh
+                FROM nhiet_do nd
+                LEFT JOIN benh_nhan bn ON nd.id_benh_nhan = bn.id
+                WHERE nd.id_benh_nhan = ? AND DATE(nd.thoi_gian_do) = CURDATE()
+                ORDER BY nd.thoi_gian_do DESC
+                LIMIT 1
+            `;
+            const [rows] = await connection.execute(query, [idBenhNhan]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Lỗi khi lấy dữ liệu nhiệt độ gần nhất:', error);
+            throw new Error('Không thể lấy dữ liệu nhiệt độ gần nhất: ' + error.message);
+        }
+    };
+
     static async update(id, data) {
         try {
             const fields = [];
@@ -260,7 +278,7 @@ class nhietDo {
             }
 
             // Đánh giá dựa trên cấu hình
-            return this.evaluateBasedOnConfig(tempCelsius, gioiHan, viTriDo, idCauHinh);
+            return this.evaluateBasedOnConfig(tempCelsius, gioiHan, idCauHinh);
             
         } catch (error) {
             console.error('Error evaluating temperature:', error);

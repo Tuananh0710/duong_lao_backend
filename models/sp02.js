@@ -153,6 +153,24 @@ class sp02 {
         }
     }
 
+    static async findLatestByBenhNhan(idBenhNhan) {
+        try {
+            const query = `
+                SELECT s.*, bn.ho_ten, bn.ngay_sinh, bn.gioi_tinh
+                FROM spo2 s
+                LEFT JOIN benh_nhan bn ON s.id_benh_nhan = bn.id
+                WHERE s.id_benh_nhan = ? AND DATE(s.thoi_gian_do) = CURDATE()
+                ORDER BY s.thoi_gian_do DESC
+                LIMIT 1
+            `;
+            const [rows] = await connection.execute(query, [idBenhNhan]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Lỗi khi lấy dữ liệu SpO2 gần nhất:', error);
+            throw new Error('Không thể lấy dữ liệu SpO2 gần nhất: ' + error.message);
+        }
+    }
+
     static async update(id, data) {
         try {
             const fields = [];

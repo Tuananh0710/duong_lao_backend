@@ -98,19 +98,19 @@ class dashBoard {
                 nhietDo,
                 duongHuyet,
             ]=await Promise.all([
-                huyetap.findLastestById(idBenhNhan).catch(err => {
+                huyetap.findLastestByIdToday(idBenhNhan).catch(err => {
                     console.error('Lỗi khi lấy chỉ số huyết áp:', err);
                     return 0;
                 }),
-                nhiptim.findLastestByBenhNhan(idBenhNhan).catch(err => {
+                nhiptim.findLastestByBenhNhanToday(idBenhNhan).catch(err => {
                     console.error('Lỗi khi lấy chỉ số nhịp tim:', err);
                     return 0;
                 }),
-                nhietdo.findLatestByBenhNhan(idBenhNhan).catch(err => {
+                nhietdo.findLatestByBenhNhanToday(idBenhNhan).catch(err => {
                     console.error('Lỗi khi lấy chỉ số nhiệt độ:', err);
                     return 0;
                 }),
-                duonghuyet.findLatestByBenhNhan(idBenhNhan).catch(err => {
+                duonghuyet.findLatestByBenhNhanToday(idBenhNhan).catch(err => {
                     console.error('Lỗi khi lấy chỉ số đường huyết:', err);
                     return 0;
                 }),
