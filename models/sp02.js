@@ -153,7 +153,7 @@ class sp02 {
         }
     }
 
-    static async findLatestByBenhNhan(idBenhNhan) {
+    static async findLatestByBenhNhanToday(idBenhNhan) {
         try {
             const query = `
                 SELECT s.*, bn.ho_ten, bn.ngay_sinh, bn.gioi_tinh

@@ -124,25 +124,46 @@ class suKien{
     }
 }
 static async getDsLoaiSuKien() {
-        try {
-            const query = `
-            SELECT DISTINCT loai 
-            FROM su_kien 
-            WHERE da_xoa != 1 
-            AND loai IS NOT NULL 
-            AND loai != ''
-            ORDER BY loai ASC
-            `;
+    try {
+        // Lấy tên database từ connection
+        const [dbResult] = await connection.execute('SELECT DATABASE() as dbName');
+        const dbName = dbResult[0].dbName;
 
-            const [rows] = await connection.execute(query);
+        const query = `
+            SELECT COLUMN_TYPE
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = ?
+            AND TABLE_NAME = 'su_kien'
+            AND COLUMN_NAME = 'loai'
+        `;
 
-            // Trả về mảng các loại sự kiện
-            return rows.map(row => row.loai);
-
-        } catch (error) {
-            console.error('Lỗi khi lấy danh sách loại sự kiện:', error);
-            throw error;
+        const [rows] = await connection.execute(query, [dbName]);
+        
+        if (rows.length === 0) {
+            // Nếu không phải ENUM, fallback về cách lấy giá trị từ bảng
+            return await this.getDsLoaiSuKienFromTable();
         }
+
+        // Parse giá trị ENUM từ chuỗi
+        const enumDefinition = rows[0].COLUMN_TYPE;
+        
+        // Kiểm tra xem có phải là ENUM không
+        if (!enumDefinition.startsWith('enum(')) {
+            return await this.getDsLoaiSuKienFromTable();
+        }
+
+        // Trích xuất các giá trị ENUM
+        const enumValues = enumDefinition
+            .substring(5, enumDefinition.length - 1) // Bỏ "enum(" và ")"
+            .split(',')
+            .map(value => value.trim().replace(/'/g, '')); // Xóa dấu nháy và khoảng trắng
+
+        return enumValues;
+
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách loại sự kiện:', error);
+        throw error;
     }
+}
 }
 module.exports=suKien;

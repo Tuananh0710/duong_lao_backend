@@ -22,7 +22,7 @@ class congViec{
         `;
         
         const [results] = await connection.execute(query, [idDieuDuong, dateToCheck]);
-        return results[0];
+        return results[0]?.tong_so_cong_viec || 0;
     } catch (error) {
         throw error;
     }

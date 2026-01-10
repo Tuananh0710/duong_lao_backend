@@ -74,7 +74,19 @@ class NhanVien {
                     tk.ho_ten,
                     tk.so_dien_thoai,
                     tk.vai_tro,
-                    COUNT(DISTINCT ddbn2.id_benh_nhan) AS so_benh_nhan_da_dieu_tri
+                    tk.trang_thai,
+                    COUNT(DISTINCT ddbn2.id_benh_nhan) AS so_benh_nhan_da_dieu_tri,
+                    GROUP_CONCAT(
+                        DISTINCT lpc.ca
+                        ORDER BY 
+                            CASE lpc.ca
+                                WHEN 'sang' THEN 1
+                                WHEN 'chieu' THEN 2
+                                WHEN 'dem' THEN 3
+                                ELSE 4
+                            END
+                        SEPARATOR ', '
+                    ) AS ca_lam_viec
                 FROM ho_so_nhan_vien hsnv
                 JOIN tai_khoan tk 
                     ON hsnv.id_tai_khoan = tk.id

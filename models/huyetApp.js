@@ -274,87 +274,144 @@ class huyetAp {
     };
 
     // Hàm đánh giá dựa trên cấu hình JSON
-    static evaluateBasedOnConfig(tamThu, tamTruong, gioiHan, idCauHinh) {
-        // Kiểm tra giá trị hợp lệ
-        const numericTamThu = parseFloat(tamThu);
-        const numericTamTruong = parseFloat(tamTruong);
-        
-        if (isNaN(numericTamThu) || !isFinite(numericTamThu) || 
-            isNaN(numericTamTruong) || !isFinite(numericTamTruong)) {
-            return {
-                danh_gia_chi_tiet: 'Không thể đánh giá',
-                muc_do: 'binh_thuong',
-                noi_dung_canh_bao: 'Giá trị không hợp lệ',
-                id_cau_hinh: idCauHinh
-            };
-        }
-
-        // Kiểm tra theo thứ tự: Thấp -> Bình thường -> Cao -> Nguy hiểm
-        // (theo logic từ hàm evaluateHuyetAp trước đó)
-        
-        // Thấp: cả tâm thu và tâm trương trong khoảng [min, max]
-        if (gioiHan.thap && 
-            gioiHan.thap.tam_thu_min !== undefined && gioiHan.thap.tam_thu_max !== undefined &&
-            gioiHan.thap.tam_truong_min !== undefined && gioiHan.thap.tam_truong_max !== undefined) {
-            if (numericTamThu >= gioiHan.thap.tam_thu_min && numericTamThu <= gioiHan.thap.tam_thu_max &&
-                numericTamTruong >= gioiHan.thap.tam_truong_min && numericTamTruong <= gioiHan.thap.tam_truong_max) {
-                return {
-                    danh_gia_chi_tiet: gioiHan.thap.danh_gia || 'Huyết áp thấp',
-                    muc_do: 'canh_bao',
-                    noi_dung_canh_bao: gioiHan.thap.message || 'Huyết áp thấp, cần theo dõi.',
-                    id_cau_hinh: idCauHinh
-                };
-            }
-        }
-
-        // Bình thường: cả tâm thu và tâm trương trong khoảng [min, max]
-        if (gioiHan.binh_thuong && 
-            gioiHan.binh_thuong.tam_thu_min !== undefined && gioiHan.binh_thuong.tam_thu_max !== undefined &&
-            gioiHan.binh_thuong.tam_truong_min !== undefined && gioiHan.binh_thuong.tam_truong_max !== undefined) {
-            if (numericTamThu >= gioiHan.binh_thuong.tam_thu_min && numericTamThu <= gioiHan.binh_thuong.tam_thu_max &&
-                numericTamTruong >= gioiHan.binh_thuong.tam_truong_min && numericTamTruong <= gioiHan.binh_thuong.tam_truong_max) {
-                return {
-                    danh_gia_chi_tiet: gioiHan.binh_thuong.danh_gia || 'Bình thường',
-                    muc_do: 'binh_thuong',
-                    noi_dung_canh_bao: gioiHan.binh_thuong.message || null,
-                    id_cau_hinh: idCauHinh
-                };
-            }
-        }
-
-        // Cao: cả tâm thu và tâm trương trong khoảng [min, max]
-        if (gioiHan.cao && 
-            gioiHan.cao.tam_thu_min !== undefined && gioiHan.cao.tam_thu_max !== undefined &&
-            gioiHan.cao.tam_truong_min !== undefined && gioiHan.cao.tam_truong_max !== undefined) {
-            if (numericTamThu >= gioiHan.cao.tam_thu_min && numericTamThu <= gioiHan.cao.tam_thu_max &&
-                numericTamTruong >= gioiHan.cao.tam_truong_min && numericTamTruong <= gioiHan.cao.tam_truong_max) {
-                return {
-                    danh_gia_chi_tiet: gioiHan.cao.danh_gia || 'Huyết áp cao',
-                    muc_do: 'canh_bao',
-                    noi_dung_canh_bao: gioiHan.cao.message || 'Huyết áp cao, cần theo dõi.',
-                    id_cau_hinh: idCauHinh
-                };
-            }
-        }
-
-        // Nguy hiểm: Nếu không thuộc bất kỳ mốc nào
-        let nguyHiemMessage = 'Huyết áp nguy hiểm! Cần can thiệp ngay.';
-        let nguyHiemDanhGia = 'Nguy hiểm';
-        
-        if (gioiHan.nguy_hiem && gioiHan.nguy_hiem.message) {
-            nguyHiemMessage = gioiHan.nguy_hiem.message;
-        }
-        if (gioiHan.nguy_hiem && gioiHan.nguy_hiem.danh_gia) {
-            nguyHiemDanhGia = gioiHan.nguy_hiem.danh_gia;
-        }
-        
+   static evaluateBasedOnConfig(tamThu, tamTruong, gioiHan, idCauHinh) {
+    // Kiểm tra giá trị hợp lệ
+    const numericTamThu = parseFloat(tamThu);
+    const numericTamTruong = parseFloat(tamTruong);
+    
+    if (isNaN(numericTamThu) || !isFinite(numericTamThu) || 
+        isNaN(numericTamTruong) || !isFinite(numericTamTruong)) {
         return {
-            danh_gia_chi_tiet: nguyHiemDanhGia,
-            muc_do: 'nguy_hiem',
-            noi_dung_canh_bao: nguyHiemMessage,
+            danh_gia_chi_tiet: 'Không thể đánh giá',
+            muc_do: 'binh_thuong',
+            noi_dung_canh_bao: 'Giá trị không hợp lệ',
             id_cau_hinh: idCauHinh
         };
     }
+
+    // Đánh giá riêng biệt cho tâm thu và tâm trương
+    let danhGiaTamThu = null;
+    let danhGiaTamTruong = null;
+    let mucDoTamThu = 'binh_thuong';
+    let mucDoTamTruong = 'binh_thuong';
+    let noiDungTamThu = null;
+    let noiDungTamTruong = null;
+
+    // Hàm đánh giá từng chỉ số
+    const danhGiaChiSo = (giaTri, loai) => {
+        // Mặc định là bình thường
+        let ketQua = {
+            danh_gia: 'Bình thường',
+            muc_do: 'binh_thuong',
+            noi_dung: null
+        };
+
+        // Kiểm tra từng mức độ: thấp -> bình thường -> cao -> nguy hiểm
+        if (gioiHan.thap && 
+            gioiHan.thap[`tam_${loai}_min`] !== undefined && 
+            gioiHan.thap[`tam_${loai}_max`] !== undefined) {
+            const min = gioiHan.thap[`tam_${loai}_min`];
+            const max = gioiHan.thap[`tam_${loai}_max`];
+            if (giaTri >= min && giaTri <= max) {
+                return {
+                    danh_gia: gioiHan.thap.danh_gia || 'Thấp',
+                    muc_do: 'canh_bao',
+                    noi_dung: gioiHan.thap.message || 'Huyết áp thấp, cần theo dõi.'
+                };
+            }
+        }
+
+        if (gioiHan.binh_thuong && 
+            gioiHan.binh_thuong[`tam_${loai}_min`] !== undefined && 
+            gioiHan.binh_thuong[`tam_${loai}_max`] !== undefined) {
+            const min = gioiHan.binh_thuong[`tam_${loai}_min`];
+            const max = gioiHan.binh_thuong[`tam_${loai}_max`];
+            if (giaTri >= min && giaTri <= max) {
+                return {
+                    danh_gia: gioiHan.binh_thuong.danh_gia || 'Bình thường',
+                    muc_do: 'binh_thuong',
+                    noi_dung: gioiHan.binh_thuong.message || null
+                };
+            }
+        }
+
+        if (gioiHan.cao && 
+            gioiHan.cao[`tam_${loai}_min`] !== undefined && 
+            gioiHan.cao[`tam_${loai}_max`] !== undefined) {
+            const min = gioiHan.cao[`tam_${loai}_min`];
+            const max = gioiHan.cao[`tam_${loai}_max`];
+            if (giaTri >= min && giaTri <= max) {
+                return {
+                    danh_gia: gioiHan.cao.danh_gia || 'Cao',
+                    muc_do: 'canh_bao',
+                    noi_dung: gioiHan.cao.message || 'Huyết áp cao, cần theo dõi.'
+                };
+            }
+        }
+
+        // Nếu không thuộc các mức trên -> nguy hiểm
+        return {
+            danh_gia: gioiHan.nguy_hiem?.danh_gia || 'Nguy hiểm',
+            muc_do: 'nguy_hiem',
+            noi_dung: gioiHan.nguy_hiem?.message || 'Huyết áp nguy hiểm! Cần can thiệp ngay.'
+        };
+    };
+
+    // Đánh giá từng chỉ số
+    const ketQuaTamThu = danhGiaChiSo(numericTamThu, 'thu');
+    const ketQuaTamTruong = danhGiaChiSo(numericTamTruong, 'truong');
+
+    // Xác định mức độ chung (lấy mức độ cao nhất)
+    const mucDoMap = {
+        'binh_thuong': 1,
+        'canh_bao': 2,
+        'nguy_hiem': 3
+    };
+
+    const mucDoChung = 
+        mucDoMap[ketQuaTamThu.muc_do] >= mucDoMap[ketQuaTamTruong.muc_do] 
+        ? ketQuaTamThu.muc_do 
+        : ketQuaTamTruong.muc_do;
+
+    // Xác định đánh giá chi tiết
+    let danhGiaChiTiet = '';
+    let noiDungCanhBao = '';
+
+    if (mucDoChung === 'nguy_hiem') {
+        danhGiaChiTiet = gioiHan.nguy_hiem?.danh_gia || 'Nguy hiểm';
+        noiDungCanhBao = gioiHan.nguy_hiem?.message || 'Huyết áp nguy hiểm! Cần can thiệp ngay.';
+    } else if (mucDoChung === 'canh_bao') {
+        // Nếu có 1 chỉ số cảnh báo, 1 chỉ số bình thường
+        if ((ketQuaTamThu.muc_do === 'canh_bao' && ketQuaTamTruong.muc_do === 'binh_thuong') ||
+            (ketQuaTamThu.muc_do === 'binh_thuong' && ketQuaTamTruong.muc_do === 'canh_bao')) {
+            
+            const chiSoCanhBao = ketQuaTamThu.muc_do === 'canh_bao' ? 'tâm thu' : 'tâm trương';
+            const mucDoCanhBao = ketQuaTamThu.muc_do === 'canh_bao' ? ketQuaTamThu.danh_gia : ketQuaTamTruong.danh_gia;
+            
+            danhGiaChiTiet = `${mucDoCanhBao} (${chiSoCanhBao})`;
+            noiDungCanhBao = `Huyết áp ${mucDoCanhBao.toLowerCase()} ở chỉ số ${chiSoCanhBao}. Cần theo dõi.`;
+        } else if (ketQuaTamThu.muc_do === 'canh_bao' && ketQuaTamTruong.muc_do === 'canh_bao') {
+            // Cả hai đều cảnh báo
+            if (ketQuaTamThu.danh_gia === ketQuaTamTruong.danh_gia) {
+                danhGiaChiTiet = ketQuaTamThu.danh_gia;
+            } else {
+                danhGiaChiTiet = `${ketQuaTamThu.danh_gia} (tâm thu) / ${ketQuaTamTruong.danh_gia} (tâm trương)`;
+            }
+            noiDungCanhBao = 'Huyết áp bất thường ở cả hai chỉ số. Cần theo dõi chặt chẽ.';
+        }
+    } else {
+        // Bình thường
+        danhGiaChiTiet = gioiHan.binh_thuong?.danh_gia || 'Bình thường';
+        noiDungCanhBao = gioiHan.binh_thuong?.message || null;
+    }
+
+    return {
+        danh_gia_chi_tiet: danhGiaChiTiet,
+        muc_do: mucDoChung,
+        noi_dung_canh_bao: noiDungCanhBao,
+        id_cau_hinh: idCauHinh
+    };
+}
 
     // Hàm đánh giá mặc định (sử dụng khi không có cấu hình)
     static evaluateBloodPressureDefault(tamThu, tamTruong, idCauHinh = null) {

@@ -33,7 +33,7 @@ class ConfigService {
         }
     }
     
-    static async getConfigByName(tenChiSo) {
+    static async    getConfigByName(tenChiSo) {
         try {
             console.log(`🔍 Đang lấy cấu hình cho chỉ số: ${tenChiSo}`);
             
@@ -88,119 +88,122 @@ class ConfigService {
         }
     }
     
-    static parseConfigData(config) {
-        let configLimits = {
-            thap: null,
-            binh_thuong: null,
-            cao: null,
-            nguy_hiem: null
-        };
-        
-        try {
-            let gioiHan = null;
-            
-            // Parse JSON từ trường gioi_han_canh_bao
-            if (config.gioi_han_canh_bao) {
-                if (typeof config.gioi_han_canh_bao === 'string') {
-                    gioiHan = JSON.parse(config.gioi_han_canh_bao);
-                } else {
-                    gioiHan = config.gioi_han_canh_bao;
-                }
-                
-                console.log(`📋 Giới hạn cấu hình cho ${config.ten_chi_so}:`, JSON.stringify(gioiHan, null, 2));
-                
-                // Xác định loại chỉ số từ tên
-                const tenChiSo = config.ten_chi_so.toLowerCase();
-                
-                if (tenChiSo.includes('spo2') || tenChiSo.includes('sp02')) {
-                    configLimits = this.parseSpo2Config(gioiHan);
-                    
-                } else if (tenChiSo.includes('đường huyết') || tenChiSo.includes('duong huyet') || tenChiSo.includes('glucose')) {
-                    configLimits = this.parseGlucoseConfig(gioiHan);
-                    
-                } else if (tenChiSo.includes('huyết áp') || tenChiSo.includes('huyet ap') || tenChiSo.includes('blood')) {
-                    configLimits = this.parseBloodPressureConfig(gioiHan);
-                    
-                } else if (tenChiSo.includes('nhịp tim') || tenChiSo.includes('nhip tim') || tenChiSo.includes('heart')) {
-                    configLimits = this.parseHeartRateConfig(gioiHan);
-                    
-                } else if (tenChiSo.includes('nhiệt độ') || tenChiSo.includes('nhiet do') || tenChiSo.includes('temperature')) {
-                    configLimits = this.parseTemperatureConfig(gioiHan);
-                    
-                } else {
-                    configLimits = this.parseGeneralConfig(gioiHan);
-                }
-                
-                console.log(`✅ Đã parse cấu hình cho ${config.ten_chi_so}`);
-            }
-        } catch (parseError) {
-            console.error('❌ Lỗi parse cấu hình JSON:', parseError);
-            console.error('Nội dung gioi_han_canh_bao:', config.gioi_han_canh_bao);
-            return this.getDefaultConfigByName(config.ten_chi_so);
-        }
-        
-        return {
-            configLimits
+static getDefaultConfigWithMetadata(config) {
+    console.log('⚠️ Sử dụng giới hạn mặc định với metadata');
+    
+    return {
+        id: config.id,
+        configLimits: this.getDefaultConfig().configLimits,
+        ngay_cap_nhat: config.ngay_cap_nhat || config.ngay_tao,
+    };
+}
+    
+
+// Parse cấu hình SpO2 với tự động điền giá trị còn thiếu
+static parseSpo2Config(gioiHan) {
+    console.log(`🎯 Bắt đầu parseSpo2Config với dữ liệu:`, gioiHan);
+    
+    let configLimits = {
+        thap: null,
+        binh_thuong: null,
+        cao: null,
+        nguy_hiem: null
+    };
+    
+    // Parse dữ liệu cơ bản
+    if (gioiHan.thap) {
+        configLimits.thap = {
+            min: gioiHan.thap.min,
+            max: gioiHan.thap.max,
+            description: 'SpO2 thấp',
+            message: gioiHan.thap.message || 'SpO2 thấp',
+            unit: '%'
         };
     }
     
-    // Parse cấu hình SpO2
-    static parseSpo2Config(gioiHan) {
-        const configLimits = {
-            thap: null,
-            binh_thuong: null,
-            cao: null,
-            nguy_hiem: null
+    if (gioiHan.binh_thuong) {
+        configLimits.binh_thuong = {
+            min: gioiHan.binh_thuong.min,
+            max: gioiHan.binh_thuong.max,
+            description: 'SpO2 bình thường',
+            message: gioiHan.binh_thuong.message || 'SpO2 bình thường',
+            unit: '%'
         };
-        
-        // Xử lý theo cấu trúc JSON từ DB của bạn
-        // {"binh_thuong":{"min":12,"max":20},"thap":{"max":21},"cao":{"min":22},"bat_on":{"min":23,"max":25},"nguy_hiem":{"min":26,"max":30}}
-        
-        if (gioiHan.binh_thuong) {
-            configLimits.binh_thuong = {
-                min: gioiHan.binh_thuong.min,
-                max: gioiHan.binh_thuong.max,
-                description: 'SpO2 bình thường',
-                unit: '%'
-            };
-        }
-        
-        if (gioiHan.thap) {
-            configLimits.thap = {
-                max: gioiHan.thap.max,
-                description: 'SpO2 thấp',
-                unit: '%'
-            };
-        }
-        
-        if (gioiHan.cao) {
-            configLimits.cao = {
-                min: gioiHan.cao.min,
-                description: 'SpO2 cao',
-                unit: '%'
-            };
-        }
-        
-        if (gioiHan.nguy_hiem) {
-            configLimits.nguy_hiem = {
-                min: gioiHan.nguy_hiem.min,
-                max: gioiHan.nguy_hiem.max,
-                description: 'SpO2 nguy hiểm',
-                message: 'Giá trị nguy hiểm! Cần can thiệp ngay.',
-                unit: '%'
-            };
-        }
-        
-        // Xử lý bat_on nếu có
-        if (gioiHan.bat_on) {
-            configLimits.cao = configLimits.cao || {};
-            configLimits.cao.min = gioiHan.bat_on.min;
-            configLimits.cao.max = gioiHan.bat_on.max;
-            configLimits.cao.description = 'SpO2 bất ổn';
-        }
-        
-        return configLimits;
     }
+    
+    if (gioiHan.cao) {
+        configLimits.cao = {
+            min: gioiHan.cao.min,
+            max: gioiHan.cao.max,
+            description: 'SpO2 cao',
+            message: gioiHan.cao.message || 'SpO2 cao',
+            unit: '%'
+        };
+    }
+    
+    if (gioiHan.nguy_hiem) {
+        configLimits.nguy_hiem = {
+            min: gioiHan.nguy_hiem.min,
+            max: gioiHan.nguy_hiem.max,
+            description: 'SpO2 nguy hiểm',
+            message: gioiHan.nguy_hiem.message || 'Giá trị nguy hiểm! Cần can thiệp ngay.',
+            unit: '%'
+        };
+    }
+    
+    // Tự động điền giá trị còn thiếu dựa trên logic SpO2
+    configLimits = this.autoFillSpo2Limits(configLimits);
+    
+    console.log(`✅ Kết quả parseSpo2Config:`, configLimits);
+    return configLimits;
+}
+
+// Tự động điền giá trị min/max còn thiếu cho SpO2
+static autoFillSpo2Limits(configLimits) {
+    const filled = { ...configLimits };
+    
+    // SpO2 phạm vi từ 0-100%
+    const ABSOLUTE_MIN = 0;
+    const ABSOLUTE_MAX = 100;
+    
+    // Điền giá trị cho 'thap'
+    if (filled.thap) {
+        if (filled.thap.min === undefined || filled.thap.min === null) {
+            filled.thap.min = ABSOLUTE_MIN; // SpO2 không thể âm
+        }
+        // max có thể giữ nguyên
+    }
+    
+    // Điền giá trị cho 'cao'
+    if (filled.cao) {
+        // min có thể giữ nguyên
+        if (filled.cao.max === undefined || filled.cao.max === null) {
+            filled.cao.max = ABSOLUTE_MAX; // SpO2 không thể > 100%
+        }
+    }
+    
+    // Điền giá trị cho 'nguy_hiem'
+    if (filled.nguy_hiem) {
+        if (filled.nguy_hiem.min === undefined || filled.nguy_hiem.min === null) {
+            filled.nguy_hiem.min = ABSOLUTE_MIN;
+        }
+        if (filled.nguy_hiem.max === undefined || filled.nguy_hiem.max === null) {
+            // Nếu 'thap' tồn tại, nguy hiểm có thể là dưới mức thấp
+            filled.nguy_hiem.max = filled.thap ? filled.thap.min - 1 : ABSOLUTE_MIN;
+        }
+    }
+    
+    // Đảm bảo tính nhất quán giữa các mức
+    if (filled.thap && filled.binh_thuong && filled.thap.max === null && filled.binh_thuong.min !== null) {
+        filled.thap.max = filled.binh_thuong.min - 1;
+    }
+    
+    if (filled.binh_thuong && filled.cao && filled.binh_thuong.max === null && filled.cao.min !== null) {
+        filled.binh_thuong.max = filled.cao.min - 1;
+    }
+    
+    return filled;
+}
     
     // Parse cấu hình đường huyết
     static parseGlucoseConfig(gioiHan) {
@@ -252,64 +255,136 @@ class ConfigService {
     }
     
     // Parse cấu hình huyết áp - ĐÃ SỬA
-    static parseBloodPressureConfig(gioiHan) {
-        const configLimits = {
-            thap: null,
-            binh_thuong: null,
-            cao: null,
-            nguy_hiem: null
+    // Parse cấu hình huyết áp - ĐÃ CẢI THIỆN
+static parseBloodPressureConfig(gioiHan) {
+    const configLimits = {
+        thap: null,
+        binh_thuong: null,
+        cao: null,
+        nguy_hiem: null
+    };
+    
+    // Parse dữ liệu từ JSON
+    if (gioiHan.thap) {
+        configLimits.thap = {
+            description: 'Huyết áp thấp',
+            message: gioiHan.thap.message || 'Huyết áp thấp',
+            unit: 'mmHg',
+            // Các giá trị tâm thu, tâm trương đầy đủ
+            tam_thu_min: gioiHan.thap.tam_thu_min,
+            tam_thu_max: gioiHan.thap.tam_thu_max,
+            tam_truong_min: gioiHan.thap.tam_truong_min,
+            tam_truong_max: gioiHan.thap.tam_truong_max
         };
-        
-        // Xử lý theo cấu trúc JSON mới của huyết áp
-        // {"thap":{"tam_thu_min":80,"tam_thu_max":89,"tam_truong_min":50,"tam_truong_max":59,...},...}
-        
-        if (gioiHan.thap) {
-            configLimits.thap = {
-                description: 'Huyết áp thấp',
-                message: gioiHan.thap.message || 'Huyết áp thấp',
-                unit: 'mmHg',
-                // Giữ nguyên các trường đặc biệt cho huyết áp
-                tam_thu_min: gioiHan.thap.tam_thu_min,
-                tam_thu_max: gioiHan.thap.tam_thu_max,
-                tam_truong_min: gioiHan.thap.tam_truong_min,
-                tam_truong_max: gioiHan.thap.tam_truong_max
-            };
-        }
-        
-        if (gioiHan.binh_thuong) {
-            configLimits.binh_thuong = {
-                description: 'Huyết áp bình thường',
-                message: gioiHan.binh_thuong.message || 'Huyết áp bình thường',
-                unit: 'mmHg',
-                tam_thu_min: gioiHan.binh_thuong.tam_thu_min,
-                tam_thu_max: gioiHan.binh_thuong.tam_thu_max,
-                tam_truong_min: gioiHan.binh_thuong.tam_truong_min,
-                tam_truong_max: gioiHan.binh_thuong.tam_truong_max
-            };
-        }
-        
-        if (gioiHan.cao) {
-            configLimits.cao = {
-                description: 'Huyết áp cao',
-                message: gioiHan.cao.message || 'Huyết áp cao',
-                unit: 'mmHg',
-                tam_thu_min: gioiHan.cao.tam_thu_min,
-                tam_thu_max: gioiHan.cao.tam_thu_max,
-                tam_truong_min: gioiHan.cao.tam_truong_min,
-                tam_truong_max: gioiHan.cao.tam_truong_max
-            };
-        }
-        
-        if (gioiHan.nguy_hiem) {
-            configLimits.nguy_hiem = {
-                description: 'Huyết áp nguy hiểm',
-                message: gioiHan.nguy_hiem.message || 'Giá trị nguy hiểm! Cần can thiệp ngay.',
-                unit: 'mmHg'
-            };
-        }
-        
-        return configLimits;
     }
+    
+    if (gioiHan.binh_thuong) {
+        configLimits.binh_thuong = {
+            description: 'Huyết áp bình thường',
+            message: gioiHan.binh_thuong.message || 'Huyết áp bình thường',
+            unit: 'mmHg',
+            tam_thu_min: gioiHan.binh_thuong.tam_thu_min,
+            tam_thu_max: gioiHan.binh_thuong.tam_thu_max,
+            tam_truong_min: gioiHan.binh_thuong.tam_truong_min,
+            tam_truong_max: gioiHan.binh_thuong.tam_truong_max
+        };
+    }
+    
+    if (gioiHan.cao) {
+        configLimits.cao = {
+            description: 'Huyết áp cao',
+            message: gioiHan.cao.message || 'Huyết áp cao',
+            unit: 'mmHg',
+            tam_thu_min: gioiHan.cao.tam_thu_min,
+            tam_thu_max: gioiHan.cao.tam_thu_max,
+            tam_truong_min: gioiHan.cao.tam_truong_min,
+            tam_truong_max: gioiHan.cao.tam_truong_max
+        };
+    }
+    
+    if (gioiHan.nguy_hiem) {
+        configLimits.nguy_hiem = {
+            description: 'Huyết áp nguy hiểm',
+            message: gioiHan.nguy_hiem.message || 'Giá trị nguy hiểm! Cần can thiệp ngay.',
+            unit: 'mmHg',
+            // Có thể thêm ngưỡng nguy hiểm nếu có trong dữ liệu
+            tam_thu_min: gioiHan.nguy_hiem.tam_thu_min || 180, // Ngưỡng nguy hiểm mặc định
+            tam_truong_min: gioiHan.nguy_hiem.tam_truong_min || 120 // Ngưỡng nguy hiểm mặc định
+        };
+    }
+    
+    return configLimits;
+}
+
+// CẦN CẬP NHẬT THÊM PHƯƠNG THỨC parseConfigData để xử lý đặc biệt cho huyết áp
+static parseConfigData(config) {
+    let configLimits = {
+        thap: null,
+        binh_thuong: null,
+        cao: null,
+        nguy_hiem: null
+    };
+    
+    try {
+        let gioiHan = null;
+        
+        // Parse JSON từ trường gioi_han_canh_bao
+        if (config.gioi_han_canh_bao) {
+            if (typeof config.gioi_han_canh_bao === 'string') {
+                gioiHan = JSON.parse(config.gioi_han_canh_bao);
+            } else {
+                gioiHan = config.gioi_han_canh_bao;
+            }
+            
+            console.log(`📋 Giới hạn cấu hình cho ${config.ten_chi_so}:`, JSON.stringify(gioiHan, null, 2));
+            
+            // Xác định loại chỉ số từ tên
+            const tenChiSo = config.ten_chi_so.toLowerCase();
+            
+            // Kiểm tra đặc biệt cho huyết áp (có cấu trúc tâm thu/tâm trương)
+            const isBloodPressure = gioiHan.thap && 
+                                   (gioiHan.thap.tam_thu_min !== undefined || 
+                                    gioiHan.thap.tam_truong_min !== undefined);
+            
+            if (isBloodPressure) {
+                console.log(`🎯 Phát hiện cấu hình huyết áp với cấu trúc tâm thu/tâm trương`);
+                configLimits = this.parseBloodPressureConfig(gioiHan);
+            } else if (tenChiSo.includes('SpO2') || tenChiSo.includes('sp02')) {
+                configLimits = this.parseSpo2Config(gioiHan);
+            } else if (tenChiSo.includes('Đường huyết') || tenChiSo.includes('duong huyet') || tenChiSo.includes('glucose')) {
+                configLimits = this.parseGlucoseConfig(gioiHan);
+            } else if (tenChiSo.includes('Nhịp tim') || tenChiSo.includes('nhip tim') || tenChiSo.includes('heart')) {
+                configLimits = this.parseHeartRateConfig(gioiHan);
+            } else if (tenChiSo.includes('Nhiệt độ') || tenChiSo.includes('nhiet do') || tenChiSo.includes('temperature')) {
+                configLimits = this.parseTemperatureConfig(gioiHan);
+            } else {
+                configLimits = this.parseGeneralConfig(gioiHan);
+            }
+            
+            console.log(`✅ Đã parse cấu hình cho ${config.ten_chi_so}`, configLimits);
+        }
+    } catch (parseError) {
+        console.error('❌ Lỗi parse cấu hình JSON:', parseError);
+        console.error('Nội dung gioi_han_canh_bao:', config.gioi_han_canh_bao);
+        return this.getDefaultConfigWithMetadata(config);
+    }
+    
+    // Trả về cả metadata và configLimits
+    return {
+        id: config.id,
+        configLimits: configLimits,
+        ngay_cap_nhat: config.ngay_cap_nhat || config.ngay_tao,
+        ten_chi_so: config.ten_chi_so, // Thêm tên chỉ số vào response
+        is_blood_pressure: this.isBloodPressureConfig(configLimits) // Thêm flag nhận diện huyết áp
+    };
+}
+
+// Helper method để kiểm tra xem có phải cấu hình huyết áp không
+static isBloodPressureConfig(configLimits) {
+    return configLimits.binh_thuong && 
+           (configLimits.binh_thuong.tam_thu_min !== undefined || 
+            configLimits.binh_thuong.tam_truong_min !== undefined);
+}
     
     // Parse cấu hình chung
     static parseGeneralConfig(gioiHan) {

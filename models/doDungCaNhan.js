@@ -214,6 +214,61 @@ class DoDungCaNhanModel {
             throw error;
         }
     }
+   static async getDsLoaiDoDung() {
+    try {
+        // Lấy tên database hiện tại
+        const [dbResult] = await connection.execute('SELECT DATABASE() as dbName');
+        const dbName = dbResult[0].dbName;
+
+        const query = `
+            SELECT COLUMN_TYPE
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = ?
+            AND TABLE_NAME = 'phan_loai_do_dung'
+            AND COLUMN_NAME = 'ten_loai'
+        `;
+
+        const [rows] = await connection.execute(query, [dbName]);
+        
+        // Nếu là ENUM, parse giá trị
+        if (rows.length > 0 && rows[0].COLUMN_TYPE.startsWith('enum(')) {
+            const enumDefinition = rows[0].COLUMN_TYPE;
+            const enumValues = enumDefinition
+                .substring(5, enumDefinition.length - 1)
+                .split(',')
+                .map(value => value.trim().replace(/'/g, ''));
+            
+            return enumValues;
+        }
+        
+        // Fallback: lấy từ bảng
+        return await this.getDsLoaiDoDungFromTable();
+
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách loại đồ dùng:', error);
+        throw error;
+    }
+}
+
+// Helper function
+static async getDsLoaiDoDungFromTable() {
+    try {
+        const query = `
+            SELECT DISTINCT ten_loai 
+            FROM phan_loai_do_dung 
+            WHERE ten_loai IS NOT NULL 
+            AND TRIM(ten_loai) != ''
+            ORDER BY ten_loai ASC
+        `;
+
+        const [rows] = await connection.execute(query);
+        return rows.map(row => row.ten_loai);
+
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách loại đồ dùng từ bảng:', error);
+        return [];
+    }
+}
 }
 
 module.exports = DoDungCaNhanModel;

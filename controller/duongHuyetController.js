@@ -21,13 +21,13 @@ class DuongHuyetController {
             });
         }
 
-        // Kiểm tra giá trị đường huyết hợp lệ 
-        if (gia_tri_duong_huyet < 18 || gia_tri_duong_huyet > 600) {
-            return res.status(400).json({
-                success: false,
-                message: 'Giá trị đường huyết không hợp lệ (18 - 600 mg/dL)'
-            });
-        }
+        // // Kiểm tra giá trị đường huyết hợp lệ 
+        // if (gia_tri_duong_huyet < 18 || gia_tri_duong_huyet > 600) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: 'Giá trị đường huyết không hợp lệ (18 - 600 mg/dL)'
+        //     });
+        // }
 
         // Tự động đánh giá đường huyết 
         const evaluation = await DuongHuyetModel.evaluateBloodSugar(gia_tri_duong_huyet);

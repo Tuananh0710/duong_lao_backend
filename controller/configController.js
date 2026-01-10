@@ -18,7 +18,7 @@ class ConfigController {
             
             res.status(200).json({
                 success: true,
-                data: configData
+                ...configData
             });
             
         } catch (error) {
@@ -46,8 +46,8 @@ class ConfigController {
             const configData = await ConfigService.getConfigByName(tenChiSo);
             
             res.status(200).json({
-                success: true,
-                data: configData
+            success: true,
+            ...configData
             });
             
         } catch (error) {

@@ -218,6 +218,25 @@ const doDungCaNhanController = {
                 message: 'Lỗi server: ' + error.message
             });
         }
+    },
+     getDsLoaiDoDung: async (req, res) => {
+        try {
+            const getDsLoaiDoDung = await DoDungCaNhanModel.getDsLoaiDoDung();
+            
+            return res.status(200).json({
+                success: true,
+                message: 'Lấy danh sách loại sự kiện thành công',
+                danh_sach: getDsLoaiDoDung 
+            });
+
+        } catch (error) {
+            console.error('Lỗi controller lấy loại sự kiện:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi hệ thống',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
     }
 };
 

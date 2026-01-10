@@ -1,10 +1,12 @@
-const {hashPassword, comparePassword} = require ('../utils/bcrypt');
+const {hashPassword, comparePassword} = require('../utils/bcrypt');
 const {generateToken,verifyToken} = require('../utils/jwt');
 const connection = require('../config/database');
+const { passwordDecrypt } = require('../utils/cryptoHelper'); // Import hàm giải mã
 
 const login = async (req, res, next) => {
     try {
         const { so_dien_thoai, email, mat_khau } = req.body;
+        const CRYPTO_KEY = process.env.CRYPTO_KEY || 'encryptionkey'; // KEY giải mã
         
         if ((!so_dien_thoai && !email) || !mat_khau) {
             return res.status(400).json({
@@ -12,6 +14,7 @@ const login = async (req, res, next) => {
                 message: 'Vui lòng nhập sdt/email hoặc mật khẩu !'
             });
         }
+        
         const query = so_dien_thoai
             ? `SELECT * FROM tai_khoan WHERE so_dien_thoai=? AND da_xoa=0 AND vai_tro != 'nguoi_nha'`
             : `SELECT * FROM tai_khoan WHERE email=? AND da_xoa=0 AND vai_tro != 'nguoi_nha'`;
@@ -43,8 +46,26 @@ const login = async (req, res, next) => {
             });
         }
 
-        const isVerifiedPass = await comparePassword(mat_khau, user.mat_khau);
+        // === PHẦN QUAN TRỌNG: GIẢI MÃ MẬT KHẨU TỪ DATABASE ===
+        let decryptedPassword = '';
+        try {
+            // Giải mã mật khẩu đã mã hóa từ database
+            decryptedPassword = passwordDecrypt(user.mat_khau, CRYPTO_KEY);
+        } catch (decryptError) {
+            console.error('Lỗi giải mã mật khẩu:', decryptError);
+            return res.status(500).json({
+                success: false,
+                message: 'Lỗi xác thực mật khẩu. Vui lòng liên hệ quản trị viên.'
+            });
+        }
+
+        // So sánh mật khẩu người dùng nhập với mật khẩu đã giải mã
+        // Nếu hệ thống cũ lưu mật khẩu không mã hóa bcrypt, so sánh trực tiếp
+        const isVerifiedPass = (mat_khau === decryptedPassword);
         
+        // HOẶC nếu mật khẩu trong db đã là bcrypt (sau khi migration), dùng comparePassword
+        // const isVerifiedPass = await comparePassword(mat_khau, decryptedPassword);
+
         if (!isVerifiedPass) {
             return res.status(401).json({
                 success: false,
@@ -94,32 +115,11 @@ const login = async (req, res, next) => {
     }
 };
 
-const getProfile= async(req,res,next) => {
-    try {
-        const [users]=await connection.execute(
-            `SELECT id, ho_ten, so_dien_thoai, email, avatar, vai_tro, trang_thai, ngay_tao
-            FROM tai_khoan WHERE id=? AND da_xoa=0`,
-            [req.user.id]
-        )
-        if(users.length === 0 ){
-            return res.status(401).json({
-                success: false,
-                message:"Taì khỏan không tồn tại"
-            });
-        }
-        res.json({
-            success: true,
-            message:"lấy ds user thành công !",
-            ...users[0]
-        })
-    } catch (error) {
-        next(error);
-    }
-};
-
+// Cập nhật hàm loginNguoiNha tương tự
 const loginNguoiNha = async (req, res, next) => {
     try {
         const { so_dien_thoai, email, mat_khau } = req.body;
+        const CRYPTO_KEY = process.env.CRYPTO_KEY || 'encryptionkey';
         
         if ((!so_dien_thoai && !email) || !mat_khau) {
             return res.status(400).json({
@@ -166,13 +166,34 @@ const loginNguoiNha = async (req, res, next) => {
             });
         }
 
-        const isVerifiedPass = await comparePassword(mat_khau, user.mat_khau);
+        // === GIẢI MÃ MẬT KHẨU TỪ DATABASE ===
+        let decryptedPassword = '';
+        try {
+            decryptedPassword = passwordDecrypt(user.mat_khau, CRYPTO_KEY);
+        } catch (decryptError) {
+            console.error('Lỗi giải mã mật khẩu:', decryptError);
+            return res.status(500).json({
+                success: false,
+                message: 'Lỗi xác thực mật khẩu. Vui lòng liên hệ quản trị viên.'
+            });
+        }
+
+        const isVerifiedPass = (mat_khau === decryptedPassword);
         
         if (!isVerifiedPass) {
             return res.status(401).json({
                 success: false,
                 message: 'Sai mật khẩu!'
             });
+        }
+
+        // Migration tự động sang bcrypt
+        if (!user.mat_khau.startsWith('$2')) {
+            const hashedPassword = await hashPassword(mat_khau);
+            await connection.execute(
+                'UPDATE tai_khoan SET mat_khau = ?, ngay_cap_nhat = NOW() WHERE id = ?',
+                [hashedPassword, user.id]
+            );
         }
 
         let thongTinBoSung = null;
@@ -192,7 +213,6 @@ const loginNguoiNha = async (req, res, next) => {
                 thongTinBoSung = {
                     ...nguoiThanList[0]
                 };
-                // Thêm id_nguoi_than vào token nếu có
                 tokenPayload.id_nguoi_than = nguoiThanList[0].id_nguoi_than;
             }
         }
@@ -218,9 +238,11 @@ const loginNguoiNha = async (req, res, next) => {
     }
 };
 
+// Cập nhật hàm changePassword để xử lý cả mật khẩu mã hóa cũ
 const changePassword = async (req, res, next) => {
     try {
         const { so_dien_thoai, email, mat_khau_cu, mat_khau_moi } = req.body;
+        const CRYPTO_KEY = process.env.CRYPTO_KEY || 'encryptionkey';
 
         // Validate input
         if ((!so_dien_thoai && !email) || !mat_khau_cu || !mat_khau_moi) {
@@ -238,7 +260,7 @@ const changePassword = async (req, res, next) => {
             });
         }
 
-        // Tìm user theo số điện thoại hoặc email
+        // Tìm user
         const query = so_dien_thoai
             ? `SELECT id, mat_khau, trang_thai FROM tai_khoan WHERE so_dien_thoai = ? AND da_xoa = 0`
             : `SELECT id, mat_khau, trang_thai FROM tai_khoan WHERE email = ? AND da_xoa = 0`;
@@ -254,9 +276,23 @@ const changePassword = async (req, res, next) => {
 
         const user = users[0];
 
-        // Kiểm tra mật khẩu cũ
-        const isCorrectPassword = await comparePassword(mat_khau_cu, user.mat_khau);
+        // Kiểm tra mật khẩu cũ - hỗ trợ cả mật khẩu mã hóa cũ và bcrypt mới
+        let isCorrectPassword = false;
         
+        // Thử kiểm tra với bcrypt trước
+        try {
+            isCorrectPassword = await comparePassword(mat_khau_cu, user.mat_khau);
+        } catch (bcryptError) {
+            // Nếu không phải bcrypt, thử giải mã mật khẩu cũ
+            try {
+                const decryptedOldPassword = passwordDecrypt(user.mat_khau, CRYPTO_KEY);
+                isCorrectPassword = (mat_khau_cu === decryptedOldPassword);
+            } catch (decryptError) {
+                console.error('Lỗi kiểm tra mật khẩu:', decryptError);
+                isCorrectPassword = false;
+            }
+        }
+
         if (!isCorrectPassword) {
             return res.status(401).json({
                 success: false,
@@ -264,10 +300,10 @@ const changePassword = async (req, res, next) => {
             });
         }
 
-        // Mã hóa mật khẩu mới
+        // Mã hóa mật khẩu mới bằng bcrypt
         const hashedPassword = await hashPassword(mat_khau_moi);
 
-        // Cập nhật mật khẩu và tự động kích hoạt tài khoản nếu đang inactive
+        // Cập nhật mật khẩu
         const [result] = await connection.execute(
             `UPDATE tai_khoan 
              SET mat_khau = ?, 
@@ -303,10 +339,37 @@ const changePassword = async (req, res, next) => {
         next(error);
     }
 };
+const getProfile= async(req,res,next) => {
+    try {
+        const [users]=await connection.execute(
+            `SELECT id, ho_ten, so_dien_thoai, email, avatar, vai_tro, trang_thai, ngay_tao
+            FROM tai_khoan WHERE id=? AND da_xoa=0`,
+            [req.user.id]
+        )
+        if(users.length === 0 ){
+            return res.status(401).json({
+                success: false,
+                message:"Taì khỏan không tồn tại"
+            });
+        }
+        res.json({
+            success: true,
+            message:"lấy ds user thành công !",
+            ...users[0]
+        })
+    } catch (error) {
+        next(error);
+    }
+};
 
-module.exports={
+// Hàm helper để kiểm tra định dạng mật khẩu
+const isBcryptHash = (password) => {
+    return password && password.startsWith('$2');
+};
+
+module.exports = {
     login,
     getProfile,
     loginNguoiNha,
     changePassword
-}
+};

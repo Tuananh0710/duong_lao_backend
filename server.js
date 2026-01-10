@@ -3,6 +3,8 @@ const cors= require('cors');
 const helmet= require('helmet');
 const morgan= require('morgan');
 const path= require('path');
+const uploadRoutes = require('./routes/uploadRoutes');
+const { uploadDirs } = require('./config/uploadConfig');
 
 require('dotenv').config();
 process.env.TZ = 'Asia/Ho_Chi_Minh'; 
@@ -34,7 +36,9 @@ const { timeStamp } = require('console');
 const app= express();
 const PORT=process.env.PORT || 6540;
 const NODE_ENV= process.env.NODE_ENV || 'development';
-
+app.use('/uploads/images', express.static(path.join(__dirname, 'public/uploads/images')));
+app.use('/uploads/videos', express.static(path.join(__dirname, 'public/uploads/videos')));
+app.use('/uploads/documents', express.static(path.join(__dirname, 'public/uploads/documents')));
 app.use(helmet());
 
 app.use(cors({
@@ -80,6 +84,7 @@ app.use('/api/notification',notificationRoutes);
 app.use('/api/tai_khoan',TaiKhoanRoutes);
 app.use('/api/phong',phongRoutes);
 app.use('/api/config',configRoutes);
+app.use('/api', uploadRoutes);
 app.get('/', (req, res) => {
   res.json({
     message: 'Chào mừng đến với API hệ thống Dưỡng Lão',

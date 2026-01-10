@@ -39,7 +39,7 @@ class dashBoard {
                     console.error('Lỗi khi lấy tổng số bệnh nhân:', err);
                     return 0;
                 }),
-                congViec.getCongViecByDieuDuong(parseInt(idDieuDuong)).catch(err => {
+                congViec.getCongViecByDieuDuong(parseInt(idTaiKhoan)).catch(err => {
                     console.error('Lỗi khi lấy tổng số công việc:', err);
                     console.error('Chi tiết lỗi công việc:', err.message);
                     console.error('Stack trace:', err.stack);
@@ -65,7 +65,7 @@ class dashBoard {
                 success: true,
                 message: 'Lấy dữ liệu dashboard thành công',
                 tong_so_benh_nhan: tong_so_benh_nhan || 0,
-                ...tong_so_cong_viec || 0, 
+                tong_so_cong_viec:tong_so_cong_viec || 0, 
                 tong_so_lich: tong_so_lich || 0,
                 tong_so_thong_bao: tong_so_thong_bao || 0,
                 id_nhan_vien: parseInt(idNhanVien),

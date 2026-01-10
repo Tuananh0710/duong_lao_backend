@@ -74,21 +74,22 @@ class BenhNhan {
             const [rows] = await connection.query(query, params);
             
             // Thêm mức độ cảnh báo cho từng bệnh nhân
-            const rowsWithTinhTrang = await Promise.all(
-                rows.map(async (row) => {
-                    const tinhTrang = await MucDoHelper.getMucDoCaoNhat(row.id);
-                    return {
-                        ...row,
-                        tinh_trang_hien_tai: tinhTrang
-                    };
-                })
-            );
+            // Trong getDsBenhNhan, thêm index cho debug
+                const rowsWithTinhTrang = await Promise.all(
+                    rows.map(async (row, index) => {
+                        const tinhTrang = await MucDoHelper.getMucDoCaoNhat(row.id, `BN${row.id}_${index}`);
+                        return {
+                            ...row,
+                            tinh_trang_hien_tai: tinhTrang
+                        };
+                    })
+                );
             
             // Sắp xếp lại theo mức độ cảnh báo
             rowsWithTinhTrang.sort((a, b) => {
                 const priority = {
                     'Nguy hiểm': 1,
-                    'Cần theo dõi': 2,
+                    'Cảnh báo': 2,
                     'Bình thường': 3,
                     'Bình thường (dữ liệu cũ)': 4,
                     'Chưa có dữ liệu': 5
@@ -312,7 +313,7 @@ class BenhNhan {
             rowsWithTinhTrang.sort((a, b) => {
                 const priority = {
                     'Nguy hiểm': 1,
-                    'Cần theo dõi': 2,
+                    'Cảnh báo': 2,
                     'Bình thường': 3,
                     'Bình thường (dữ liệu cũ)': 4,
                     'Chưa có dữ liệu': 5
