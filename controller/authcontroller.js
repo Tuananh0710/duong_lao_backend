@@ -187,15 +187,6 @@ const loginNguoiNha = async (req, res, next) => {
             });
         }
 
-        // Migration tự động sang bcrypt
-        if (!user.mat_khau.startsWith('$2')) {
-            const hashedPassword = await hashPassword(mat_khau);
-            await connection.execute(
-                'UPDATE tai_khoan SET mat_khau = ?, ngay_cap_nhat = NOW() WHERE id = ?',
-                [hashedPassword, user.id]
-            );
-        }
-
         let thongTinBoSung = null;
         let tokenPayload = {
             id_tai_khoan: user.id,

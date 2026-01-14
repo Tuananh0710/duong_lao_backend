@@ -21,7 +21,7 @@ class DuongHuyetController {
             });
         }
 
-        // // Kiểm tra giá trị đường huyết hợp lệ 
+        // Kiểm tra giá trị đường huyết hợp lệ (tùy chọn - có thể bỏ comment khi cần)
         // if (gia_tri_duong_huyet < 18 || gia_tri_duong_huyet > 600) {
         //     return res.status(400).json({
         //         success: false,
@@ -98,6 +98,7 @@ class DuongHuyetController {
                                 configLimits.thap = {
                                     min: gioiHan.thap.min,
                                     max: gioiHan.thap.max,
+                                    unit: 'mg/dL'
                                 };
                             }
                             
@@ -106,6 +107,7 @@ class DuongHuyetController {
                                 configLimits.binh_thuong = {
                                     min: gioiHan.binh_thuong.min,
                                     max: gioiHan.binh_thuong.max,
+                                    unit: 'mg/dL'
                                 };
                             }
                             
@@ -114,6 +116,7 @@ class DuongHuyetController {
                                 configLimits.cao = {
                                     min: gioiHan.cao.min,
                                     max: gioiHan.cao.max,
+                                    unit: 'mg/dL'
                                 };
                             }
                             
@@ -122,6 +125,7 @@ class DuongHuyetController {
                                 configLimits.nguy_hiem = {
                                     description: gioiHan.nguy_hiem.danh_gia || 'Nguy hiểm',
                                     message: gioiHan.nguy_hiem.message || 'Giá trị nguy hiểm! Cần can thiệp ngay.',
+                                    unit: 'mg/dL'
                                 };
                             }
                             
@@ -142,55 +146,48 @@ class DuongHuyetController {
             console.log('ℹ️ Không có ID cấu hình trong kết quả đánh giá');
         }
         
-        // Nếu không có cấu hình từ database, sử dụng giới hạn mặc định
+        // Nếu không có cấu hình từ database, sử dụng giới hạn mặc định CHO mg/dL
         if (!hasConfigFromDB) {
-            console.log('⚠️ Sử dụng giới hạn mặc định do không lấy được cấu hình từ DB');
+            console.log('⚠️ Sử dụng giới hạn mặc định (mg/dL) do không lấy được cấu hình từ DB');
             
-            // Mặc định (chung)
+            // Mặc định cho mg/dL (tiêu chuẩn ADA)
             configLimits = {
                 thap: {
                     min: 0,
-                    max: 3.9,
-                    unit: 'mmol/L'
+                    max: 70,
+                    unit: 'mg/dL'
                 },
                 binh_thuong: {
-                    min: 3.9,
-                    max: 6.1,
-                    unit: 'mmol/L'
+                    min: 70,
+                    max: 110,
+                    unit: 'mg/dL'
                 },
                 cao: {
-                    min: 6.2,
-                    max: 11.0,
-                    unit: 'mmol/L'
+                    min: 111,
+                    max: 200,
+                    unit: 'mg/dL'
                 },
                 nguy_hiem: {
                     description: 'Đường huyết rất cao',
                     message: 'Nguy cơ biến chứng nghiêm trọng',
-                    unit: 'mmol/L'
+                    unit: 'mg/dL'
                 }
             };
             
             configInfo.used_from_db = false;
         }
         
-        // Thêm thông tin chuyển đổi đơn vị
-        const conversions = {
-            mg_dl: gia_tri_duong_huyet,
-            mmol_l: DuongHuyetModel.convertGlucoseUnit(gia_tri_duong_huyet, 'mg/dl', 'mmol/l').toFixed(1)
-        };
-        
-        // Xác định vị trí của giá trị hiện tại trong các giới hạn
+        // Xác định vị trí của giá trị hiện tại trong các giới hạn (SỬ DỤNG mg/dL TRỰC TIẾP)
         let currentRange = 'nguy_hiem'; // Mặc định
-        const valueInMgDl = gia_tri_duong_huyet;
-        const valueInMmolL = parseFloat(conversions.mmol_l);
+        const value = parseFloat(gia_tri_duong_huyet);
         
-        console.log(`📈 Giá trị hiện tại: ${valueInMgDl} mg/dL = ${valueInMmolL} mmol/L`);
+        console.log(`📈 Giá trị hiện tại: ${value} mg/dL`);
         
-        if (configLimits.thap && valueInMmolL >= configLimits.thap.min && valueInMmolL <= configLimits.thap.max) {
+        if (configLimits.thap && value >= configLimits.thap.min && value <= configLimits.thap.max) {
             currentRange = 'thap';
-        } else if (configLimits.binh_thuong && valueInMmolL >= configLimits.binh_thuong.min && valueInMmolL <= configLimits.binh_thuong.max) {
+        } else if (configLimits.binh_thuong && value >= configLimits.binh_thuong.min && value <= configLimits.binh_thuong.max) {
             currentRange = 'binh_thuong';
-        } else if (configLimits.cao && valueInMmolL >= configLimits.cao.min && valueInMmolL <= configLimits.cao.max) {
+        } else if (configLimits.cao && value >= configLimits.cao.min && value <= configLimits.cao.max) {
             currentRange = 'cao';
         }
         
@@ -201,20 +198,18 @@ class DuongHuyetController {
             success: true,
             message: result.message,
             ...result.data,
-            // conversions: conversions,
             config_limits: configLimits,
-            // config_info: configInfo,
-            // evaluation_summary: {
-            //     used_config_id: evaluation.id_cau_hinh,
-            //     config_from_db: hasConfigFromDB,
-            //     current_range: currentRange,
-            //     current_range_details: configLimits[currentRange] || {},
-            //     value_mg_dl: valueInMgDl,
-            //     value_mmol_l: valueInMmolL,
-            //     is_normal: currentRange === 'binh_thuong',
-            //     is_warning: currentRange === 'thap' || currentRange === 'cao',
-            //     is_danger: currentRange === 'nguy_hiem'
-            // }
+            config_info: configInfo,
+            evaluation_summary: {
+                used_config_id: evaluation.id_cau_hinh,
+                config_from_db: hasConfigFromDB,
+                current_range: currentRange,
+                current_range_details: configLimits[currentRange] || {},
+                value_mg_dl: value,
+                is_normal: currentRange === 'binh_thuong',
+                is_warning: currentRange === 'thap' || currentRange === 'cao',
+                is_danger: currentRange === 'nguy_hiem'
+            }
         });
     } catch (error) {
         console.error('❌ Lỗi trong controller create:', error);
@@ -319,7 +314,7 @@ class DuongHuyetController {
                 if (currentData) {
                     const glucose = updateData.gia_tri_duong_huyet; 
                     // Giả sử đo trước ăn nếu không có thông tin
-                    const evaluation = DuongHuyetModel.evaluateBloodSugar(glucose);
+                    const evaluation = await DuongHuyetModel.evaluateBloodSugar(glucose);
                     updateData.danh_gia_chi_tiet = evaluation.danh_gia_chi_tiet;
                     updateData.muc_do = evaluation.muc_do;
                     updateData.noi_dung_canh_bao = evaluation.noi_dung_canh_bao;
@@ -377,27 +372,20 @@ class DuongHuyetController {
                 });
             }
 
-            // Kiểm tra giá trị hợp lệ 
-            if (gia_tri_duong_huyet < 18 || gia_tri_duong_huyet > 600) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Giá trị đường huyết không hợp lệ (18 - 600 mg/dL)'
-                });
-            }
+            // Kiểm tra giá trị hợp lệ (tùy chọn)
+            // if (gia_tri_duong_huyet < 18 || gia_tri_duong_huyet > 600) {
+            //     return res.status(400).json({
+            //         success: false,
+            //         message: 'Giá trị đường huyết không hợp lệ (18 - 600 mg/dL)'
+            //     });
+            // }
             
-            const evaluation = DuongHuyetModel.evaluateBloodSugar(gia_tri_duong_huyet, measurement_time);
-            
-            // Thêm thông tin chuyển đổi để hiển thị
-            const conversions = {
-                mg_dl: gia_tri_duong_huyet,
-                mmol_l: DuongHuyetModel.convertGlucoseUnit(gia_tri_duong_huyet, 'mg/dl', 'mmol/l').toFixed(1)
-            };
+            const evaluation = await DuongHuyetModel.evaluateBloodSugar(gia_tri_duong_huyet, measurement_time);
             
             res.status(200).json({
                 success: true,
                 data: {
                     ...evaluation,
-                    conversions,
                     measurement_time: measurement_time
                 }
             });

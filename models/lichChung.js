@@ -19,7 +19,7 @@ class lichChung {
                     mo_ta AS ghi_chu,
                     ngay AS thoi_gian,
                     dia_diem,
-                    'su_kien' AS loai,
+                    loai,
                     ngay_tao,
                     ngay_cap_nhat,
                     trang_thai
@@ -146,7 +146,7 @@ class lichChung {
                     mo_ta AS ghi_chu,
                     ngay AS thoi_gian,
                     dia_diem,
-                    'su_kien' AS loai,
+                    loai,
                     ngay_tao,
                     ngay_cap_nhat
                 FROM su_kien 
@@ -197,7 +197,7 @@ class lichChung {
                     mo_ta AS ghi_chu,
                     ngay AS thoi_gian,
                     dia_diem,
-                    'su_kien' AS loai,
+                    loai,
                     ngay_tao,
                     ngay_cap_nhat,
                     ABS(DATEDIFF(ngay, CURDATE())) AS khoang_cach
@@ -258,7 +258,7 @@ static async getLichChungTrongTuan(idBenhNhan) {
                     mo_ta AS ghi_chu,
                     ngay AS thoi_gian,
                     dia_diem,
-                    'su_kien' AS loai,
+                    loai,
                     anh_dai_dien,
                     trang_thai,
                     ngay_tao,

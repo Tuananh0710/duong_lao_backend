@@ -6,6 +6,7 @@ const huyetap = require('../models/huyetApp');
 const nhiptim = require('../models/nhipTim');
 const nhietdo = require('../models/nhietdo');
 const duonghuyet = require('../models/duongHuyet');
+const mucDoHelper = require('../helpers/mucDoHelper');
 
 class dashBoard {
     static async getAll(req, res) {
@@ -45,7 +46,7 @@ class dashBoard {
                     console.error('Stack trace:', err.stack);
                     return 0;
                 }),
-                thongBao.countByType('canh_bao').catch(err => {
+                mucDoHelper.countMucDoCanhBaoTheoDieuDuongTrongNgay(idDieuDuong).catch(err => {
                     console.error('Lỗi khi đếm thông báo:', err);
                     return 0;
                 }),

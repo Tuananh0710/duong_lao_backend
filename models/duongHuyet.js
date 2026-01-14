@@ -19,7 +19,7 @@ class DuongHuyetModel {
 
             console.log('=== BẮT ĐẦU THÊM DỮ LIỆU ĐƯỜNG HUYẾT ===');
             console.log(`Bệnh nhân ID: ${id_benh_nhan}`);
-            console.log(`Giá trị đường huyết: ${gia_tri_duong_huyet}`);
+            console.log(`Giá trị đường huyết: ${gia_tri_duong_huyet} mg/dL`);
             console.log(`Thời điểm đo: ${thoi_diem_do || 'khac'}`);
             
             // Nếu chưa có đánh giá, tự động đánh giá dựa trên cấu hình
@@ -246,20 +246,10 @@ class DuongHuyetModel {
    static async evaluateBloodSugar(glucoseValue, thoiDiemDo = null) {
     try {
         console.log('=== BẮT ĐẦU ĐÁNH GIÁ ĐƯỜNG HUYẾT ===');
-        console.log(`Giá trị đầu vào: ${glucoseValue}`);
+        console.log(`Giá trị đầu vào: ${glucoseValue} mg/dL`);
         
-        // Phát hiện và chuyển đổi đơn vị tự động
-        let glucoseValueEvaluated = parseFloat(glucoseValue);
-        let inputUnit = this.detectGlucoseUnit(glucoseValueEvaluated);
-        let targetUnit = 'mmol/l'; // Mặc định cấu hình dùng mmol/L
-        
-        console.log(`Phát hiện đơn vị đầu vào: ${inputUnit}`);
-        
-        // Nếu đơn vị đầu vào khác với đơn vị mục tiêu (cấu hình), chuyển đổi
-        if (inputUnit !== targetUnit) {
-            glucoseValueEvaluated = this.convertGlucoseUnit(glucoseValueEvaluated, inputUnit, targetUnit);
-            console.log(`Chuyển đổi ${glucoseValue} ${inputUnit} -> ${glucoseValueEvaluated.toFixed(2)} ${targetUnit}`);
-        }
+        // Giữ nguyên giá trị, không chuyển đổi đơn vị
+        const glucoseValueEvaluated = parseFloat(glucoseValue);
         
         let tenChiSo = 'Đường huyết';
         console.log(`Tìm cấu hình cho: "${tenChiSo}"`);
@@ -301,7 +291,7 @@ class DuongHuyetModel {
 
         // Nếu không có cấu hình, sử dụng đánh giá mặc định
         if (!cauHinh || !cauHinh.gioi_han_canh_bao) {
-            console.log('Không tìm thấy cấu hình, sử dụng tiêu chuẩn mặc định (ADA)');
+            console.log('Không tìm thấy cấu hình, sử dụng tiêu chuẩn mặc định (ADA - mg/dL)');
             const result = this.evaluateBloodSugarDefault(glucoseValueEvaluated, idCauHinh);
             console.log('Đánh giá mặc định:', JSON.stringify(result, null, 2));
             console.log('=== KẾT THÚC ĐÁNH GIÁ ===\n');
@@ -326,7 +316,7 @@ class DuongHuyetModel {
             return result;
         }
 
-        // Đánh giá dựa trên cấu hình (sử dụng giá trị đã chuyển đổi)
+        // Đánh giá dựa trên cấu hình (sử dụng giá trị trực tiếp, không chuyển đổi)
         const result = this.evaluateBasedOnConfig(glucoseValueEvaluated, gioiHan, idCauHinh);
         
         console.log('Kết quả đánh giá từ cấu hình:', JSON.stringify(result, null, 2));
@@ -343,117 +333,11 @@ class DuongHuyetModel {
     }
 }
 
-// Hàm phát hiện đơn vị đường huyết tự động
-static detectGlucoseUnit(value) {
-    const numericValue = parseFloat(value);
-    
-    // Logic phát hiện đơn vị:
-    // - mmol/L thường nằm trong khoảng 1-30 (thông thường 3-15)
-    // - mg/dL thường nằm trong khoảng 50-500 (thông thường 70-270)
-    
-    if (numericValue <= 30) {
-        // Giá trị <= 30, có thể là mmol/L (giá trị thường gặp: 4-7 bình thường)
-        return 'mmol/l';
-    } else if (numericValue > 30 && numericValue <= 500) {
-        // Giá trị 30-500, có thể là mg/dL (giá trị thường gặp: 70-126 bình thường)
-        return 'mg/dl';
-    } else {
-        // Giá trị > 500, vẫn xử lý là mg/dL nhưng có thể bất thường
-        return 'mg/dl';
-    }
-}
-
-// Hàm đánh giá dựa trên cấu hình JSON
-static evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh) {
-    console.log('--- Đánh giá dựa trên cấu hình JSON ---');
-    console.log(`Giá trị (đã chuyển đổi về mmol/L): ${glucoseValue}`);
-    
-    const numericValue = parseFloat(glucoseValue);
-    
-    if (isNaN(numericValue) || !isFinite(numericValue)) {
-        console.log('Giá trị không hợp lệ');
-        return {
-            danh_gia_chi_tiet: 'Không thể đánh giá',
-            muc_do: 'binh_thuong',
-            noi_dung_canh_bao: 'Giá trị không hợp lệ',
-            id_cau_hinh: idCauHinh,
-            config_type: 'invalid_value'
-        };
-    }
-
-    console.log(`Giá trị số: ${numericValue}`);
-    
-    // Kiểm tra theo thứ tự: Thấp -> Bình thường -> Cao -> Nguy hiểm
-    
-    // Thấp: giá trị trong khoảng [min, max]
-    if (gioiHan.thap && gioiHan.thap.min !== undefined && gioiHan.thap.max !== undefined) {
-        console.log(`Kiểm tra mức THẤP: ${gioiHan.thap.min} - ${gioiHan.thap.max}`);
-        if (numericValue >= gioiHan.thap.min && numericValue <= gioiHan.thap.max) {
-            console.log('→ Thuộc mức THẤP');
-            return {
-                danh_gia_chi_tiet: gioiHan.thap.danh_gia || 'Đường huyết thấp',
-                muc_do: 'canh_bao',
-                noi_dung_canh_bao: gioiHan.thap.message || 'Giá trị thấp, cần theo dõi.',
-                id_cau_hinh: idCauHinh,
-                config_type: 'thap'
-            };
-        }
-    }
-
-    // Bình thường: giá trị trong khoảng [min, max]
-    if (gioiHan.binh_thuong && gioiHan.binh_thuong.min !== undefined && gioiHan.binh_thuong.max !== undefined) {
-        console.log(`Kiểm tra mức BÌNH THƯỜNG: ${gioiHan.binh_thuong.min} - ${gioiHan.binh_thuong.max}`);
-        if (numericValue >= gioiHan.binh_thuong.min && numericValue <= gioiHan.binh_thuong.max) {
-            console.log('→ Thuộc mức BÌNH THƯỜNG');
-            return {
-                danh_gia_chi_tiet: gioiHan.binh_thuong.danh_gia || 'Bình thường',
-                muc_do: 'binh_thuong',
-                noi_dung_canh_bao: gioiHan.binh_thuong.message || null,
-                id_cau_hinh: idCauHinh,
-                config_type: 'binh_thuong'
-            };
-        }
-    }
-
-    // Cao: giá trị trong khoảng [min, max]
-    if (gioiHan.cao && gioiHan.cao.min !== undefined && gioiHan.cao.max !== undefined) {
-        console.log(`Kiểm tra mức CAO: ${gioiHan.cao.min} - ${gioiHan.cao.max}`);
-        if (numericValue >= gioiHan.cao.min && numericValue <= gioiHan.cao.max) {
-            console.log('→ Thuộc mức CAO');
-            return {
-                danh_gia_chi_tiet: gioiHan.cao.danh_gia || 'Đường huyết cao',
-                muc_do: 'canh_bao',
-                noi_dung_canh_bao: gioiHan.cao.message || 'Giá trị cao, cần theo dõi.',
-                id_cau_hinh: idCauHinh,
-                config_type: 'cao'
-            };
-        }
-    }
-
-    // Nguy hiểm: Nếu giá trị không thuộc bất kỳ mốc nào
-    console.log('Không thuộc mức nào, xác định là NGUY HIỂM');
-    let nguyHiemMessage = 'Giá trị nguy hiểm! Cần can thiệp ngay.';
-    let nguyHiemDanhGia = 'Nguy hiểm';
-    
-    if (gioiHan.nguy_hiem && gioiHan.nguy_hiem.message) {
-        nguyHiemMessage = gioiHan.nguy_hiem.message;
-    }
-    if (gioiHan.nguy_hiem && gioiHan.nguy_hiem.danh_gia) {
-        nguyHiemDanhGia = gioiHan.nguy_hiem.danh_gia;
-    }
-    
-    return {
-        danh_gia_chi_tiet: nguyHiemDanhGia,
-        muc_do: 'nguy_hiem',
-        noi_dung_canh_bao: nguyHiemMessage,
-        id_cau_hinh: idCauHinh,
-        config_type: 'nguy_hiem'
-    };
-}
-
-    // Hàm đánh giá dựa trên cấu hình JSON (có thêm logging)
+    // Hàm đánh giá dựa trên cấu hình JSON
     static evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh) {
         console.log('--- Đánh giá dựa trên cấu hình JSON ---');
+        console.log(`Giá trị đường huyết: ${glucoseValue} mg/dL`);
+        
         const numericValue = parseFloat(glucoseValue);
         
         if (isNaN(numericValue) || !isFinite(numericValue)) {
@@ -467,13 +351,13 @@ static evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh) {
             };
         }
 
-        console.log(`Giá trị số: ${numericValue}`);
+        console.log(`Giá trị số: ${numericValue} mg/dL`);
         
         // Kiểm tra theo thứ tự: Thấp -> Bình thường -> Cao -> Nguy hiểm
         
         // Thấp: giá trị trong khoảng [min, max]
         if (gioiHan.thap && gioiHan.thap.min !== undefined && gioiHan.thap.max !== undefined) {
-            console.log(`Kiểm tra mức THẤP: ${gioiHan.thap.min} - ${gioiHan.thap.max}`);
+            console.log(`Kiểm tra mức THẤP: ${gioiHan.thap.min} - ${gioiHan.thap.max} mg/dL`);
             if (numericValue >= gioiHan.thap.min && numericValue <= gioiHan.thap.max) {
                 console.log('→ Thuộc mức THẤP');
                 return {
@@ -488,7 +372,7 @@ static evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh) {
 
         // Bình thường: giá trị trong khoảng [min, max]
         if (gioiHan.binh_thuong && gioiHan.binh_thuong.min !== undefined && gioiHan.binh_thuong.max !== undefined) {
-            console.log(`Kiểm tra mức BÌNH THƯỜNG: ${gioiHan.binh_thuong.min} - ${gioiHan.binh_thuong.max}`);
+            console.log(`Kiểm tra mức BÌNH THƯỜNG: ${gioiHan.binh_thuong.min} - ${gioiHan.binh_thuong.max} mg/dL`);
             if (numericValue >= gioiHan.binh_thuong.min && numericValue <= gioiHan.binh_thuong.max) {
                 console.log('→ Thuộc mức BÌNH THƯỜNG');
                 return {
@@ -503,7 +387,7 @@ static evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh) {
 
         // Cao: giá trị trong khoảng [min, max]
         if (gioiHan.cao && gioiHan.cao.min !== undefined && gioiHan.cao.max !== undefined) {
-            console.log(`Kiểm tra mức CAO: ${gioiHan.cao.min} - ${gioiHan.cao.max}`);
+            console.log(`Kiểm tra mức CAO: ${gioiHan.cao.min} - ${gioiHan.cao.max} mg/dL`);
             if (numericValue >= gioiHan.cao.min && numericValue <= gioiHan.cao.max) {
                 console.log('→ Thuộc mức CAO');
                 return {
@@ -537,20 +421,63 @@ static evaluateBasedOnConfig(glucoseValue, gioiHan, idCauHinh) {
         };
     }
 
-
-    // Hàm chuyển đổi đơn vị đường huyết
-    static convertGlucoseUnit(value, fromUnit, toUnit) {
-        if (fromUnit === toUnit) return value;
+    // Hàm đánh giá mặc định sử dụng mg/dL
+    static evaluateBloodSugarDefault(glucoseValue, idCauHinh) {
+        const numericValue = parseFloat(glucoseValue);
         
-        if (fromUnit === 'mg/dl' && toUnit === 'mmol/l') {
-            return value / 18.018;  // mg/dL to mmol/L
-        } else if (fromUnit === 'mmol/l' && toUnit === 'mg/dl') {
-            return value * 18.018;  // mmol/L to mg/dL
+        if (isNaN(numericValue)) {
+            return {
+                danh_gia_chi_tiet: 'Không thể đánh giá',
+                muc_do: 'binh_thuong',
+                noi_dung_canh_bao: 'Giá trị không hợp lệ',
+                id_cau_hinh: idCauHinh,
+                config_type: 'default_invalid'
+            };
         }
         
-        return value;
+        // Tiêu chuẩn ADA cho đơn vị mg/dL
+        if (numericValue < 70) {
+            return {
+                danh_gia_chi_tiet: 'Hạ đường huyết',
+                muc_do: 'canh_bao',
+                noi_dung_canh_bao: 'Đường huyết thấp (<70 mg/dL).',
+                id_cau_hinh: idCauHinh,
+                config_type: 'default_thap'
+            };
+        } else if (numericValue >= 70 && numericValue <= 99) {
+            return {
+                danh_gia_chi_tiet: 'Bình thường',
+                muc_do: 'binh_thuong',
+                noi_dung_canh_bao: null,
+                id_cau_hinh: idCauHinh,
+                config_type: 'default_binh_thuong'
+            };
+        } else if (numericValue >= 100 && numericValue <= 125) {
+            return {
+                danh_gia_chi_tiet: 'Tiền đái tháo đường',
+                muc_do: 'canh_bao',
+                noi_dung_canh_bao: 'Đường huyết cao (100-125 mg/dL).',
+                id_cau_hinh: idCauHinh,
+                config_type: 'default_tien_dai_thao_duong'
+            };
+        } else if (numericValue >= 126 && numericValue <= 200) {
+            return {
+                danh_gia_chi_tiet: 'Đái tháo đường',
+                muc_do: 'canh_bao',
+                noi_dung_canh_bao: 'Đường huyết cao, có thể là đái tháo đường (≥126 mg/dL).',
+                id_cau_hinh: idCauHinh,
+                config_type: 'default_dai_thao_duong'
+            };
+        } else {
+            return {
+                danh_gia_chi_tiet: 'Đường huyết rất cao - Nguy hiểm',
+                muc_do: 'nguy_hiem',
+                noi_dung_canh_bao: 'Đường huyết rất cao (>200 mg/dL). Cần can thiệp ngay.',
+                id_cau_hinh: idCauHinh,
+                config_type: 'default_nguy_hiem'
+            };
+        }
     }
-
 }
 
 module.exports = DuongHuyetModel;

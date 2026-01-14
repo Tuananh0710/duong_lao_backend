@@ -180,7 +180,7 @@ class BenhNhanController {
     static async getDsBenhNhanByNguoiNha(req, res) {
         try {
             
-            const idTaiKhoanNguoiNha = req.user.id_nguoi_than;
+            const idTaiKhoanNguoiNha = req.user.id_tai_khoan;
             const vaiTro = req.user.vai_tro;
 
             // Chỉ cho phép người nhà

@@ -1,34 +1,47 @@
 const connection=require('../config/database');
 
 class suKien{
-    static async getDsSuKien(){
-        try {
-            const query=`
-            SELECT 
-                id,
-                tieu_de,
-                mo_ta,
-                ngay,
-                dia_diem,
-                ngay_tao,
-                ngay_cap_nhat,
-                loai
-            FROM su_kien WHERE da_xoa != 1 AND ngay >= CURDATE()
-            ORDER BY ngay DESC
-            LIMIT 10
-            `;
 
-            const [rows]=await connection.execute(query);
 
-            return rows;
+static async getDsSuKien() {
+    try {
+        // Cập nhật trạng thái trước
+        await this.capNhatTrangThaiTuDong();
+        
+        const query = `
+        SELECT 
+            id,
+            tieu_de,
+            mo_ta,
+            ngay,
+            dia_diem,
+            ngay_tao,
+            ngay_cap_nhat,
+            loai,
+            trang_thai,
+            CASE 
+                WHEN DATE(ngay) = CURDATE() THEN 'dang_dien_ra'
+                WHEN DATE(ngay) < CURDATE() THEN 'ket_thuc'
+                ELSE trang_thai
+            END as trang_thai_hien_tai
+        FROM su_kien 
+        WHERE da_xoa != 1 AND ngay >= CURDATE() - INTERVAL 7 DAY
+        ORDER BY ngay DESC
+        LIMIT 10
+        `;
 
-        } catch (error) {
-            console.error('loi khi lay lich su kien:', error);
-            throw error;
-        }
+        const [rows] = await connection.execute(query);
+        return rows;
+    } catch (error) {
+        console.error('Lỗi khi lấy lịch sự kiện:', error);
+        throw error;
     }
+}
     static async getDsSuKienTrongTuan() {
     try {
+        // 1. CẬP NHẬT TRẠNG THÁI TỰ ĐỘNG TRƯỚC KHI LẤY DỮ LIỆU
+        await this.capNhatTrangThaiTuDong();
+        
         const query = `
         SELECT 
             id,
@@ -45,19 +58,40 @@ class suKien{
             -- Xác định ngày trong tuần
             DAYNAME(ngay) as thu,
             DATE_FORMAT(ngay, '%d/%m/%Y') as ngay_format,
-            DATE_FORMAT(ngay, '%H:%i') as gio_format
+            DATE_FORMAT(ngay, '%H:%i') as gio_format,
+            ngay, -- Thêm ngày gốc để sắp xếp
+            -- Tính trạng thái hiện tại dựa trên ngày
+            CASE 
+                WHEN DATE(ngay) = CURDATE() THEN 'dang_dien_ra'
+                WHEN DATE(ngay) < CURDATE() THEN 'ket_thuc'
+                ELSE trang_thai
+            END as trang_thai_hien_tai
         FROM su_kien 
         WHERE da_xoa != 1 
             -- Lấy tất cả sự kiện trong tuần hiện tại (từ thứ 2 đến chủ nhật)
             AND DATE(ngay) >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)  -- Thứ 2 đầu tuần
             AND DATE(ngay) <= DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 6 DAY)  -- Chủ nhật cuối tuần
-        ORDER BY ngay ASC
+        ORDER BY 
+            -- Sắp xếp theo: sự kiện đang diễn ra -> sắp diễn ra -> đã kết thúc
+            CASE 
+                WHEN DATE(ngay) = CURDATE() THEN 1
+                WHEN DATE(ngay) > CURDATE() THEN 2
+                ELSE 3
+            END,
+            ngay ASC,
+            trang_thai DESC
         `;
 
         const [rows] = await connection.execute(query);
 
         // Nhóm sự kiện theo ngày
         const suKienTheoNgay = {};
+        const suKienTheoTrangThai = {
+            dang_dien_ra: [],
+            sap_dien_ra: [],
+            ket_thuc: []
+        };
+
         rows.forEach(suKien => {
             const ngayKey = suKien.ngay_format;
             if (!suKienTheoNgay[ngayKey]) {
@@ -68,13 +102,22 @@ class suKien{
                 };
             }
             suKienTheoNgay[ngayKey].danh_sach.push(suKien);
+            
+            // Phân loại theo trạng thái
+            if (suKien.trang_thai_hien_tai === 'dang_dien_ra') {
+                suKienTheoTrangThai.dang_dien_ra.push(suKien);
+            } else if (suKien.trang_thai_hien_tai === 'sap_dien_ra') {
+                suKienTheoTrangThai.sap_dien_ra.push(suKien);
+            } else {
+                suKienTheoTrangThai.ket_thuc.push(suKien);
+            }
         });
 
         // Tính toán thông tin tuần trong JavaScript
         const today = new Date();
         const currentDay = today.getDay(); // 0=Chủ nhật, 1=Thứ 2, ..., 6=Thứ 7
         
-        // Tính thứ 2 đầu tuần: nếu today là Chủ nhật (0) thì lùi 6 ngày, nếu không thì lùi (currentDay-1) ngày
+        // Tính thứ 2 đầu tuần
         const diffToMonday = currentDay === 0 ? 6 : currentDay - 1;
         
         const startOfWeek = new Date(today);
@@ -91,13 +134,7 @@ class suKien{
             return `${year}-${month}-${day}`;
         };
 
-        // Debug: kiểm tra phạm vi tuần
-        console.log('Hôm nay:', formatDate(today));
-        console.log('Thứ 2 đầu tuần:', formatDate(startOfWeek));
-        console.log('Chủ nhật cuối tuần:', formatDate(endOfWeek));
-        console.log('Số sự kiện:', rows.length);
-
-        // Tính tuần hiện tại theo ISO (tuần bắt đầu từ thứ 2)
+        // Tính tuần hiện tại theo ISO
         const getWeekNumber = (date) => {
             const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
             const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
@@ -110,16 +147,47 @@ class suKien{
             tong_so: rows.length,
             danh_sach: rows,
             // theo_ngay: Object.values(suKienTheoNgay),
+            // theo_trang_thai: suKienTheoTrangThai,
             // thong_tin_tuan: {
             //     tuan_hien_tai: currentWeek,
             //     thoi_gian_tu: formatDate(startOfWeek),
             //     thoi_gian_den: formatDate(endOfWeek),
-            //     ngay_hom_nay: formatDate(today)
+            //     ngay_hom_nay: formatDate(today),
+            //     thu_hom_nay: ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'][currentDay]
             // }
         };
 
     } catch (error) {
         console.error('Lỗi khi lấy sự kiện trong tuần:', error);
+        throw error;
+    }
+}
+
+// THÊM PHƯƠNG THỨC CẬP NHẬT TRẠNG THÁI TỰ ĐỘNG
+static async capNhatTrangThaiTuDong() {
+    try {
+        const query = `
+            -- Cập nhật sự kiện đang diễn ra (hôm nay)
+            UPDATE su_kien 
+            SET trang_thai = 'dang_dien_ra',
+                ngay_cap_nhat = CURRENT_TIMESTAMP()
+            WHERE da_xoa != 1 
+                AND DATE(ngay) = CURDATE()
+                AND trang_thai != 'dang_dien_ra';
+            
+            -- Cập nhật sự kiện đã kết thúc (trước hôm nay)
+            UPDATE su_kien 
+            SET trang_thai = 'ket_thuc',
+                ngay_cap_nhat = CURRENT_TIMESTAMP()
+            WHERE da_xoa != 1 
+                AND DATE(ngay) < CURDATE()
+                AND trang_thai != 'ket_thuc';
+        `;
+        
+        const [result] = await connection.execute(query);
+        return result;
+    } catch (error) {
+        console.error('Lỗi cập nhật trạng thái tự động:', error);
         throw error;
     }
 }

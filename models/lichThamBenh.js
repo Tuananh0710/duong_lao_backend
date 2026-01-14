@@ -64,30 +64,109 @@ LIMIT 1
             throw error;
         }
     }
-    static async getLichLastestByNguoiThanBenhNhan(id_nguoi_than, id_benh_nhan) {
-        try {
-            const query = `
+   static async getLichLastestByNguoiThanBenhNhan(ten_nguoi_than, id_benh_nhan) {
+    try {
+        if (!id_benh_nhan || !ten_nguoi_than) {
+            throw new Error('Thiếu tham số cần thiết!');
+        }
+
+        console.log('=== DEBUG: Tham số đầu vào ===');
+        console.log('id_benh_nhan:', id_benh_nhan);
+        console.log('ten_nguoi_than:', ten_nguoi_than);
+
+        // **TRƯỚC TIÊN**: Query đơn giản để kiểm tra dữ liệu tồn tại
+        const checkQuery = `
             SELECT 
+                ltb.id,
                 ltb.ngay,
                 ltb.khung_gio,
                 ltb.id_benh_nhan,
                 ltb.id_nguoi_than,
-                ltb.loai
+                ltb.loai,
+                ltb.trang_thai,
+                ntbn.ho_ten,
+                DATE(DATE_ADD(NOW(), INTERVAL 7 HOUR)) as current_date_val,
+                HOUR(DATE_ADD(NOW(), INTERVAL 7 HOUR)) as current_hour_val
             FROM lich_tham_benh ltb
-            WHERE ltb.id_benh_nhan=? AND ltb.id_nguoi_than=? AND ltb.trang_thai = 'da_duyet' AND ltb.ngay >= CURDATE()
-            ORDER BY ltb.ngay ASC
-            LIMIT 1
-            `
-            if (!id_benh_nhan || !id_nguoi_than) {
-                throw new Error('thieu tham so can thiet !');
-            }
-            const [rows] = await connection.execute(query, [id_benh_nhan, id_nguoi_than]);
-            return rows[0] || null  
-        } catch (error) {
-            console.error('Lỗi khi lấy dữ liệu lịch hẹn gần nhất:', error);
-            throw new Error('Không thể lấy dữ liệu lịch hẹn gần nhất: ' + error.message);
+            INNER JOIN nguoi_than_benh_nhan ntbn 
+                ON ltb.id_nguoi_than = ntbn.id
+            WHERE ltb.id_benh_nhan = ?  
+                AND ntbn.ho_ten = ?
+                AND ltb.trang_thai = 'da_duyet'
+            ORDER BY ltb.ngay DESC
+            LIMIT 5
+        `;
+
+        console.log('=== DEBUG: Kiểm tra tất cả lịch đã duyệt ===');
+        const [checkRows] = await connection.execute(checkQuery, [id_benh_nhan, ten_nguoi_than]);
+        console.log('Số lịch tìm thấy:', checkRows.length);
+        console.log('Chi tiết:', checkRows);
+
+        if (checkRows.length === 0) {
+            console.log('Không tìm thấy lịch nào với thông tin đã cho');
+            return null;
         }
+
+        // **QUERY LẤY LỊCH GẦN NHẤT TRONG TƯƠNG LAI**
+        const query = `
+            SELECT 
+                ltb.id,
+                ltb.ngay,
+                ltb.khung_gio,
+                ltb.id_benh_nhan,
+                ltb.id_nguoi_than,
+                ltb.loai,
+                ltb.trang_thai,
+                ltb.ghi_chu,
+                -- Debug info
+                DATE(DATE_ADD(NOW(), INTERVAL 7 HOUR)) as current_date_utc7,
+                HOUR(DATE_ADD(NOW(), INTERVAL 7 HOUR)) as current_hour_utc7,
+                CAST(SUBSTRING_INDEX(ltb.khung_gio, '_', 1) AS UNSIGNED) as start_hour,
+                CAST(SUBSTRING_INDEX(ltb.khung_gio, '_', -1) AS UNSIGNED) as end_hour,
+                -- Tính toán xem lịch này còn hiệu lực không
+                CASE 
+                    WHEN ltb.ngay > DATE(DATE_ADD(NOW(), INTERVAL 7 HOUR)) THEN 'future'
+                    WHEN ltb.ngay = DATE(DATE_ADD(NOW(), INTERVAL 7 HOUR)) 
+                         AND HOUR(DATE_ADD(NOW(), INTERVAL 7 HOUR)) < CAST(SUBSTRING_INDEX(ltb.khung_gio, '_', -1) AS UNSIGNED) 
+                    THEN 'today_valid'
+                    ELSE 'expired'
+                END as status
+            FROM lich_tham_benh ltb
+            INNER JOIN nguoi_than_benh_nhan ntbn 
+                ON ltb.id_nguoi_than = ntbn.id
+            WHERE ltb.id_benh_nhan = ?  
+                AND ntbn.ho_ten = ?
+                AND ltb.trang_thai = 'da_duyet'
+                -- Điều kiện: lịch CHƯA HẾT HẠN
+                AND (
+                    -- Ngày trong tương lai
+                    ltb.ngay > DATE(DATE_ADD(NOW(), INTERVAL 7 HOUR))
+                    OR 
+                    -- Ngày hôm nay VÀ CHƯA QUÁ khung giờ cuối
+                    (
+                        ltb.ngay = DATE(DATE_ADD(NOW(), INTERVAL 7 HOUR))
+                        AND 
+                        HOUR(DATE_ADD(NOW(), INTERVAL 7 HOUR)) < 
+                            CAST(SUBSTRING_INDEX(ltb.khung_gio, '_', -1) AS UNSIGNED)
+                    )
+                )
+            ORDER BY 
+                ltb.ngay ASC,
+                CAST(SUBSTRING_INDEX(ltb.khung_gio, '_', 1) AS UNSIGNED) ASC
+            LIMIT 1
+        `;
+
+        console.log('=== DEBUG: Query lấy lịch gần nhất ===');
+        const [rows] = await connection.execute(query, [id_benh_nhan, ten_nguoi_than]);
+        console.log('Kết quả query chính:', rows.length > 0 ? rows[0] : 'Không có kết quả');
+        
+        return rows[0] || null;
+        
+    } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu lịch hẹn gần nhất:', error);
+        throw new Error('Không thể lấy dữ liệu lịch hẹn gần nhất: ' + error.message);
     }
+}
     static async create(visitData) {
     try {
       const {

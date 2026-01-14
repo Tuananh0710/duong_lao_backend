@@ -56,10 +56,10 @@ class lichThamBenhController {
     static async getLichThamBenhGanNhat(req, res) {
         try {
             // Lấy id từ param
-            const { id_benh_nhan, id_nguoi_than } = req.params;
+            const { id_benh_nhan, ten_nguoi_than } = req.params;
 
             // Kiểm tra tham số
-            if (!id_benh_nhan || !id_nguoi_than) {
+            if (!id_benh_nhan || !ten_nguoi_than) {
                 return res.status(400).json({
                     success: false,
                     message: 'Vui lòng cung cấp id_benh_nhan và id_nguoi_than trong URL'
@@ -67,7 +67,7 @@ class lichThamBenhController {
             }
 
             // Kiểm tra định dạng ID
-            if (isNaN(id_benh_nhan) || isNaN(id_nguoi_than)) {
+            if (isNaN(id_benh_nhan) || !ten_nguoi_than) {
                 return res.status(400).json({
                     success: false,
                     message: 'ID không hợp lệ, phải là số'
@@ -76,11 +76,11 @@ class lichThamBenhController {
 
             // Chuyển đổi sang số nguyên
             const benhNhanId = parseInt(id_benh_nhan);
-            const nguoiThanId = parseInt(id_nguoi_than);
+
 
             // Gọi hàm model
             const lichGanNhat = await lichThamBenhModel.getLichLastestByNguoiThanBenhNhan(
-                nguoiThanId,
+                ten_nguoi_than,
                 benhNhanId
             );
 
