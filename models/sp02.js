@@ -54,11 +54,13 @@ class sp02 {
             // Đảm bảo không có undefined trong values
             const sanitizedValues = values.map(v => v === undefined ? null : v);
             const [result] = await connection.execute(query, sanitizedValues);
-            const newRecord = await this.findById(result.insertId);
+            const newId = result.insertId;
+            const newRecord = await this.findById(newId);
 
             return {
                 success: true,
                 message: 'Thêm dữ liệu SpO2 thành công',
+                id: newId,
                 data: newRecord
             };
         } catch (error) {

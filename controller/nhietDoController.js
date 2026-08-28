@@ -33,7 +33,8 @@ class nhietDoController{
             const result=await nhietDo.create(data);
             res.status(201).json({
                 success: true,
-                message: result.message
+                message: result.message,
+                id: result.id
             });
         } catch (error) {
             console.error('Lỗi trong controller create:', error);

@@ -26,6 +26,7 @@ class nhipTimController{
              res.status(201).json({
                 success: true,
                 message: result.message,
+                id: result.id,
                 // data: result.data,
                 // ...evaluation
             });

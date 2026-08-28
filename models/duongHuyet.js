@@ -62,13 +62,15 @@ class DuongHuyetModel {
             
             const [result] = await db.execute(query, values);
             
-            const newRecord = await this.findById(result.insertId);
+            const newId = result.insertId;
+            const newRecord = await this.findById(newId);
             
             console.log('=== KẾT THÚC THÊM DỮ LIỆU ĐƯỜNG HUYẾT ===\n');
             
             return {
                 success: true,
                 message: 'Thêm dữ liệu đường huyết thành công',
+                id: newId,
                 data: newRecord
             };
         } catch (error) {

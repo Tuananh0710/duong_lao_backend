@@ -198,6 +198,7 @@ class DuongHuyetController {
             success: true,
             message: result.message,
             ...result.data,
+            id: result.id,
             config_limits: configLimits,
             config_info: configInfo,
             evaluation_summary: {

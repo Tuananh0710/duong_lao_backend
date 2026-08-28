@@ -59,6 +59,7 @@ class huyetAp {
             return {
                 success: true,
                 message: 'Thêm dữ liệu huyết áp thành công',
+                id: newId,
                 data: newRecord ? newRecord[0] : null
             };
         } catch (error) {

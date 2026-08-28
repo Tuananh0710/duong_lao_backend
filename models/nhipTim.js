@@ -51,11 +51,13 @@ class nhipTim {
             const [result] = await connection.execute(query, sanitizedValues);
             
             // Lấy record vừa tạo bằng ID
-            const newRecord = await this.findById(result.insertId);
+            const newId = result.insertId;
+            const newRecord = await this.findById(newId);
             
             return {
                 success: true,
                 message: 'Thêm dữ liệu nhịp tim thành công',
+                id: newId,
                 data: newRecord
             };
         } catch (error) {

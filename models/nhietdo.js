@@ -56,6 +56,7 @@ class nhietDo {
             return {
                 success: true,
                 message: 'Thêm dữ liệu nhiệt độ thành công',
+                id: newId,
                 data: newRecord
             };
         } catch (error) {
