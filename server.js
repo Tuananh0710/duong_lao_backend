@@ -30,6 +30,8 @@ const TaiKhoanRoutes =require ('./routes/taiKhoanRoutes');
 const phongRoutes= require('./routes/phongRoutes');
 const configRoutes = require('./routes/configRoutes');
 const canhBaoChiSoRoutes = require('./routes/canhBaoChiSoRoutes');
+const tuThuocRoutes = require('./routes/tuThuocRoutes');
+const vatTuTieuHaoRoutes = require('./routes/vatTuTieuHaoRoutes');
 
 const {errorHandler,notFound}= require('./middlewares/errorHandler');
 const { timeStamp } = require('console');
@@ -86,6 +88,8 @@ app.use('/api/tai_khoan',TaiKhoanRoutes);
 app.use('/api/phong',phongRoutes);
 app.use('/api/config',configRoutes);
 app.use('/api/canh_bao_chi_so',canhBaoChiSoRoutes);
+app.use('/api/tu_thuoc',tuThuocRoutes);
+app.use('/api/vat-tu-tieu-hao',vatTuTieuHaoRoutes);
 app.use('/api', uploadRoutes);
 app.get('/', (req, res) => {
   res.json({
